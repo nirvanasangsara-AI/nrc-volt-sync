@@ -254,11 +254,11 @@ final class HealthKitExporter: ObservableObject {
             }
             healthStore.execute(query)
         }
-        var locations: [CLLocation] = []
+        var allLocations: [CLLocation] = []
         for route in routes {
-            locations += try await locations(for: route)
+            allLocations += try await locations(for: route)
         }
-        return locations.sorted(by: { $0.timestamp < $1.timestamp }).map {
+        return allLocations.sorted(by: { $0.timestamp < $1.timestamp }).map {
             RoutePoint(
                 offsetSeconds: max(0, $0.timestamp.timeIntervalSince(workout.startDate)),
                 latitude: $0.coordinate.latitude,
@@ -270,7 +270,8 @@ final class HealthKitExporter: ObservableObject {
     }
 
     private func locations(for route: HKWorkoutRoute) async throws -> [CLLocation] {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<[CLLocation], Error>) in
             var all: [CLLocation] = []
             let query = HKWorkoutRouteQuery(route: route) { _, locations, done, error in
                 if let error {
@@ -313,7 +314,8 @@ final class HealthKitExporter: ObservableObject {
 
     private func enableBackgroundDelivery() async throws {
         let workoutType = HKObjectType.workoutType()
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<Void, Error>) in
             healthStore.enableBackgroundDelivery(for: workoutType, frequency: .immediate) {
                 success, error in
                 if let error {
