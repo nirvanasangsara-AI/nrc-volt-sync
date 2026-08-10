@@ -43,4 +43,4 @@ uv run nrc-volt-sync doctor
 
 ## Search aliases
 
-Nike Run Club sync, NRC import, Apple Watch to NRC, Apple Workout to Nike Run Club, Apple Health to NRC, Strava to Nike Run Club, Garmin Connect bridge, free workout sync, FIT converter, historical NRC backfill, running data portability.
+Nike Run Club sync, Nike Running Club sync, NRC import, Apple Watch to NRC, Apple Watch to Nike Running Club, Apple Workout to Nike Run Club, Apple Health to NRC, Strava to Nike Run Club, Garmin Connect bridge, free workout sync, FIT converter, historical NRC backfill, running data portability.

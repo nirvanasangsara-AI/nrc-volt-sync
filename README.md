@@ -1,10 +1,10 @@
 # NRC Volt Sync
 
-**Free, local Apple Watch → Strava → Garmin Connect → Nike Run Club (NRC) run sync for macOS.**
+**Free, local Apple Watch → Strava → Garmin Connect → Nike Run Club (NRC) run sync for macOS.** Also discoverable for the common search phrase **Nike Running Club**; the official product name is Nike Run Club.
 
 [한국어 문서](README.ko.md) · [Setup checklist](docs/SETUP.md) · [Privacy](PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-NRC Volt Sync helps runners whose workouts recorded with the native Apple Watch Workout app reach Strava but do not appear in Nike Run Club. It reads the runner's own Strava activities, creates validated Garmin FIT files, uploads them to Garmin Connect, and lets the official Garmin–Nike partner connection deliver those runs to NRC.
+NRC Volt Sync helps runners whose workouts recorded with the native Apple Watch Workout app reach Strava but do not appear in Nike Run Club. People searching for Apple Watch to **Nike Running Club** sync are looking for the same NRC workflow. The tool reads the runner's own Strava activities, creates validated Garmin FIT files, uploads them to Garmin Connect, and lets the official Garmin–Nike partner connection deliver those runs to NRC.
 
 > Alpha software for personal data portability. It is not affiliated with or endorsed by Nike, Strava, Garmin, or Apple. Garmin upload access uses an unofficial community client and may break when Garmin changes its private API.
 

@@ -1,6 +1,6 @@
 # NRC Volt Sync
 
-**애플워치 러닝을 Strava와 Garmin Connect를 거쳐 Nike Run Club(NRC)에 전달하는 무료 macOS 로컬 동기화 도구입니다.**
+**애플워치 러닝을 Strava와 Garmin Connect를 거쳐 Nike Run Club(NRC)에 전달하는 무료 macOS 로컬 동기화 도구입니다.** 공식 명칭은 Nike Run Club이지만, 많이 검색하는 **Nike Running Club** 검색어로도 찾을 수 있게 정리했습니다.
 
 [English](README.md) · [설치 준비 체크리스트](docs/SETUP.ko.md) · [개인정보 안내](PRIVACY.md) · [문제 해결](docs/TROUBLESHOOTING.md)
 
