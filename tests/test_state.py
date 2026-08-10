@@ -3,9 +3,10 @@ import sqlite3
 from nrc_volt_sync.state import SCHEMA_VERSION, State
 
 
-def _record(state: State, *, strava_id: int = 101, status: str = "uploaded") -> None:
+def _record(state: State, *, source_id: str = "101", status: str = "uploaded") -> None:
     state.record(
-        strava_id=strava_id,
+        source="strava",
+        source_id=source_id,
         fingerprint="synthetic-fingerprint",
         activity_start="2024-01-15T08:00:00Z",
         distance_m=5000.0,
@@ -21,9 +22,9 @@ def test_state_records_completion_and_summary(tmp_path) -> None:
     with State(path) as state:
         _record(state)
 
-        assert state.is_complete(101)
-        assert state.summary() == {"uploaded": 1}
-        assert state.get(101)["attempts"] == 1
+        assert state.is_complete("strava", "101")
+        assert state.summary() == {"strava:uploaded": 1}
+        assert state.get("strava", "101")["attempts"] == 1
 
     assert path.stat().st_mode & 0o777 == 0o600
 
@@ -61,10 +62,13 @@ def test_migrates_legacy_response_payload_out_of_database(tmp_path) -> None:
         columns = {
             row["name"] for row in state.connection.execute("PRAGMA table_info(sync_item)")
         }
-        row = state.get(101)
+        row = state.get("strava", "101")
         version = state.connection.execute("PRAGMA user_version").fetchone()[0]
 
         assert "response_json" not in columns
+        assert "strava_id" not in columns
+        assert row["source"] == "strava"
+        assert row["source_id"] == "101"
         assert row["garmin_id"] == "202"
         assert row["status"] == "uploaded"
         assert version == SCHEMA_VERSION

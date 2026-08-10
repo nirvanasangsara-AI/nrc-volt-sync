@@ -15,7 +15,9 @@ def _sync_args(**overrides):
         "after": None,
         "before": None,
         "after_days": None,
+        "source": "strava",
         "activity_id": None,
+        "healthkit_id": None,
         "limit": 25,
         "dry_run": False,
         "all_non_garmin": False,
@@ -26,8 +28,12 @@ def _sync_args(**overrides):
 
 def test_sync_command_reports_failure_and_nonzero(monkeypatch, capsys) -> None:
     batch = SyncBatchResult(
-        results=[SyncResult(101, "uploaded", "Synthetic Run", 5000.0, garmin_id="202")],
-        failures=[SyncFailure(102, "RuntimeError", "synthetic failure")],
+        results=[
+            SyncResult(
+                "strava", "101", "uploaded", "Synthetic Run", 5000.0, garmin_id="202"
+            )
+        ],
+        failures=[SyncFailure("strava", "102", "RuntimeError", "synthetic failure")],
         scanned=2,
     )
     monkeypatch.setattr(cli, "_single_instance", nullcontext)
@@ -36,7 +42,7 @@ def test_sync_command_reports_failure_and_nonzero(monkeypatch, capsys) -> None:
     assert cli._sync(_sync_args(after="2024-01-01", before="2024-01-31")) == 1
     output = capsys.readouterr()
     assert "5.00 km" in output.out
-    assert "FAILED activity 102" in output.err
+    assert "FAILED strava activity 102" in output.err
 
 
 def test_sync_command_reports_clean_empty_run(monkeypatch, capsys) -> None:
@@ -45,7 +51,63 @@ def test_sync_command_reports_clean_empty_run(monkeypatch, capsys) -> None:
         cli, "sync_many", lambda **_kwargs: SyncBatchResult([], [], scanned=0)
     )
     assert cli._sync(_sync_args(after_days=14)) == 0
-    assert "No new Apple Watch runs" in capsys.readouterr().out
+    assert "No new eligible runs" in capsys.readouterr().out
+
+
+def test_auto_source_runs_healthkit_before_strava(monkeypatch) -> None:
+    calls = []
+    config = {
+        "healthkit_outbox": "/synthetic/outbox",
+        "strava_client_id": "x",
+        "strava_client_secret": "x",
+        "strava_access_token": "x",
+        "strava_refresh_token": "x",
+        "strava_expires_at": 1,
+    }
+    monkeypatch.setattr(cli, "load_config", lambda: config)
+    monkeypatch.setattr(cli, "_single_instance", nullcontext)
+
+    def healthkit(**_kwargs):
+        calls.append("healthkit")
+        return SyncBatchResult(
+            [SyncResult("healthkit", "synthetic", "validated", "Run", 1000)], [], 1
+        )
+
+    def strava(**kwargs):
+        calls.append(("strava", kwargs["limit"]))
+        return SyncBatchResult([], [], 0)
+
+    monkeypatch.setattr(cli, "sync_healthkit_many", healthkit)
+    monkeypatch.setattr(cli, "sync_many", strava)
+
+    assert cli._sync(_sync_args(source="auto", dry_run=True, limit=2)) == 0
+    assert calls == ["healthkit", ("strava", 1)]
+
+
+def test_configure_healthkit_stores_only_selected_directories(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    outbox = tmp_path / "outbox"
+    export = tmp_path / "export"
+    outbox.mkdir()
+    export.mkdir()
+    saved = []
+    monkeypatch.setattr(cli, "load_config", lambda: {"existing": "synthetic"})
+    monkeypatch.setattr(cli, "save_config", lambda value: saved.append(value))
+
+    args = argparse.Namespace(
+        outbox=str(outbox), fit_export_dir=str(export), no_fit_export=False
+    )
+    assert cli._configure_healthkit(args) == 0
+
+    assert saved == [
+        {
+            "existing": "synthetic",
+            "healthkit_outbox": str(outbox),
+            "fit_export_dir": str(export),
+        }
+    ]
+    assert "connection complete" in capsys.readouterr().out
 
 
 def test_inspect_prints_safe_metadata_only(monkeypatch, capsys) -> None:

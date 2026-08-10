@@ -22,3 +22,15 @@ jobs:
       - run: uv run ruff check .
       - run: uv run bandit -q -r src/nrc_volt_sync
       - run: uv run pip-audit
+      - run: swift test --package-path ios
+      - run: brew install xcodegen
+      - run: xcodegen --spec ios/project.yml --project ios
+      - run: git diff --exit-code -- ios/NRCVoltSyncHealth.xcodeproj
+      - run: >-
+          xcodebuild
+          -project ios/NRCVoltSyncHealth.xcodeproj
+          -scheme NRCVoltSyncHealth
+          -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
+          build

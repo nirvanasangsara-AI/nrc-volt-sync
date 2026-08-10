@@ -1,19 +1,32 @@
 # Using NRC Volt Sync without an existing Strava account
 
-NRC Volt Sync 0.2 uses Strava as its automatic Apple Workout source. A runner who does not already
-use Strava still has two free paths today, but only one is automatic. A completely Strava-free,
-full-fidelity automatic path requires an iPhone companion because Apple does not allow macOS apps to
-read the HealthKit store.
+NRC Volt Sync 0.3 includes a direct, Strava-free Apple Health source. An iPhone companion is required
+because Apple does not allow macOS apps to read the HealthKit store. The companion writes only
+Apple-origin running workouts to a private folder chosen by the runner; the Mac processes that
+outbox automatically.
 
 ## Choose a path
 
 | Goal | Free | Automatic | GPS | Heart rate and cadence | Available now |
 | --- | --- | --- | --- | --- | --- |
+| Direct iPhone HealthKit companion | Yes | Yes, subject to iOS scheduling | Preserved when HealthKit contains a route | HealthKit fields preserved; cadence is not exposed | Yes, beta in 0.3 |
 | Use a private Strava account only as a relay | Yes | Yes | Preserved when Strava exposes it | Preserved only when Strava exposes it | Yes |
-| Never create a Strava account; recover outdoor history | Yes | No | Preserved when Apple's export contains a timed route | Usually incomplete in GPX; indoor runs have no route | Yes, manual fallback |
-| Never use Strava; automatic full-fidelity sync | Intended to be free | Yes | Intended to preserve source data | Intended to preserve source data | Not yet; tracked in [issue 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2) |
+| Apple Health full export and outdoor GPX | Yes | No | Preserved when the export contains a timed route | Usually incomplete; indoor runs have no route | Manual fallback |
 
-## Path 1: free private Strava relay
+## Path 1: direct Apple Health companion
+
+This is the implemented zero-Strava route. Build the included iOS app with a free Apple Personal
+Team, grant HealthKit read access, choose a private iCloud Drive/Files folder, and connect that same
+folder on the Mac with `configure-healthkit`. Follow the exact checklist in
+[HEALTHKIT_COMPANION.md](HEALTHKIT_COMPANION.md).
+
+The code and service are free. Apple's free Personal Team profile expires after 7 days and requires
+a weekly rebuild/reinstall; public
+App Store/TestFlight distribution would require a paid publisher account that this project does not
+operate. iOS also controls background timing, so opening the companion and exporting the last seven
+days is the fallback if a new run is delayed.
+
+## Path 2: free private Strava relay
 
 This is the recommended current path for someone who does not otherwise use Strava. A free account
 can be used only as a transport layer; NRC Volt Sync has no requirement to post socially, follow
@@ -38,7 +51,7 @@ from Strava into NRC.
 
 Official reference: [Nike and Strava](https://support.strava.com/en-us/articles/15401850-nike-and-strava).
 
-## Path 2: no Strava account, manual Apple Health export
+## Path 3: no Strava account, manual Apple Health export
 
 This is a free historical fallback for outdoor runs. It is not the unattended workflow promised by
 the automatic service.
@@ -74,10 +87,10 @@ or other health file inside the Git repository.
 
 ## Uploading to other services
 
-NRC Volt Sync currently automates one destination: Garmin Connect, followed by the user's Garmin–Nike
-partner connection. Validated FIT activities produced by the current Strava path remain in the
-private local runtime folder. A user may copy an individual FIT to another private location and
-manually import it into a service that officially accepts FIT activities.
+NRC Volt Sync automates one destination: Garmin Connect, followed by the user's Garmin–Nike partner
+connection. The HealthKit setup can write validated FIT copies to a private directory selected with
+`--fit-export-dir`. A user may manually import an individual FIT into another service that officially
+accepts FIT activities.
 
 Do not upload the whole runtime folder or publish a FIT file: it can contain timestamps, GPS routes,
 heart rate, and other health data. Automatic multi-service delivery is not generic. Every destination
@@ -95,14 +108,13 @@ Official references:
 - [Workout route data](https://developer.apple.com/documentation/healthkit/hkworkoutroute)
 - [HealthKit authorization](https://developer.apple.com/documentation/healthkit/authorizing-access-to-health-data)
 
-The planned architecture in [issue 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2)
-is:
+The architecture implemented in version 0.3 is:
 
 ```text
 Apple Watch Workout → HealthKit on iPhone → local companion/outbox
 → NRC Volt Sync on Mac → portable FIT → Garmin Connect → Nike Run Club
 ```
 
-The portable FIT outbox is also the foundation for user-directed imports into other services. Each
+The portable FIT directory is also the foundation for user-directed imports into other services. Each
 automatic destination still needs its own supported API and explicit account authorization; this
 project will not scrape services or collect users' credentials on a maintainer server.

@@ -1,19 +1,29 @@
 # Strava를 쓰지 않는 사람을 위한 방법
 
-NRC Volt Sync 0.2는 Strava를 애플 기본 운동의 자동 입력원으로 사용합니다. 평소 Strava를
-쓰지 않는 사람도 현재 무료 경로가 두 가지 있지만 자동 경로는 한 가지뿐입니다. Strava를
-전혀 거치지 않으면서 GPS와 센서까지 자동 보존하려면 아이폰 보조 앱이 필요합니다. Apple이
-macOS 앱의 HealthKit 데이터 읽기를 허용하지 않기 때문입니다.
+NRC Volt Sync 0.3에는 Strava를 전혀 쓰지 않는 Apple 건강 직접 입력이 들어 있습니다.
+Apple이 macOS 앱의 HealthKit 읽기를 허용하지 않으므로 아이폰 보조 앱은 필요합니다. 보조
+앱은 Apple 원본 러닝만 사용자가 고른 비공개 폴더에 쓰고 Mac이 그 전송함을 자동 처리합니다.
 
 ## 어떤 방법을 선택하나요?
 
 | 목적 | 무료 | 자동 | GPS | 심박·케이던스 | 현재 가능 |
 | --- | --- | --- | --- | --- | --- |
+| 아이폰 HealthKit 직접 연결 | 예 | 예, iOS 실행 시각에 따름 | HealthKit 경로가 있으면 보존 | HealthKit 항목 보존, 케이던스는 미제공 | 예, 0.3 베타 |
 | 비공개 Strava 계정을 중계소로만 사용 | 예 | 예 | Strava가 주는 경우 보존 | Strava가 주는 항목만 보존 | 예 |
-| Strava 계정 없이 야외 과거 기록 복구 | 예 | 아니요 | Apple 내보내기에 시간 포함 경로가 있으면 보존 | GPX에는 대개 불완전, 실내는 경로 없음 | 예, 수동 대안 |
-| Strava 없이 GPS·센서 전체 자동 동기화 | 무료로 개발 예정 | 예 | 원본 보존 목표 | 원본 보존 목표 | 아직 없음, [이슈 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2) |
+| Apple 건강 전체 내보내기와 야외 GPX | 예 | 아니요 | 시간 포함 경로가 있으면 보존 | 대개 불완전, 실내는 경로 없음 | 수동 대안 |
 
-## 방법 1: 무료 비공개 Strava 중계 계정
+## 방법 1: Apple 건강 직접 연결
+
+구현된 Strava 없는 경로입니다. 포함된 iOS 앱을 무료 Apple Personal Team으로 빌드하고
+HealthKit 읽기를 허용한 뒤 비공개 iCloud Drive/Files 폴더를 고릅니다. Mac에서 같은 폴더를
+`configure-healthkit`으로 연결합니다. 정확한 순서는
+[HEALTHKIT_COMPANION.ko.md](HEALTHKIT_COMPANION.ko.md)에 있습니다.
+
+코드와 서비스는 무료입니다. 다만 Apple 무료 Personal Team 프로필은 7일 후 만료돼 앱을
+매주 다시 빌드·설치해야 하고, 공개 App Store/TestFlight 배포에는 이 프로젝트가 운영하지 않는 유료 게시자 계정이
+필요합니다. 새 러닝이 늦으면 앱을 열어 최근 7일 내보내기를 누르는 것이 확실한 대안입니다.
+
+## 방법 2: 무료 비공개 Strava 중계 계정
 
 Strava를 평소 사용하지 않는 사람에게 현재 가장 현실적인 자동 방법입니다. 무료 계정을
 운동 운반용으로만 사용할 수 있고, 공개 게시·친구 추가·유료 구독은 필요하지 않습니다.
@@ -35,7 +45,7 @@ Nike에서 새로 기록한 운동을 Strava로 보내는 방향이고, Strava�
 
 공식 안내: [Nike and Strava](https://support.strava.com/en-us/articles/15401850-nike-and-strava)
 
-## 방법 2: Strava 계정 없이 Apple 건강 수동 내보내기
+## 방법 3: Strava 계정 없이 Apple 건강 수동 내보내기
 
 야외 과거 러닝을 무료로 옮기는 대안입니다. 자동 서비스처럼 계속 알아서 처리되는 방식은
 아닙니다.
@@ -71,10 +81,10 @@ Git 저장소 안에 넣으면 안 됩니다.
 
 ## 다른 운동 서비스에도 올리려면
 
-현재 NRC Volt Sync가 자동 업로드하는 목적지는 Garmin Connect 한 곳이며, 그 뒤에는 사용자의
-Garmin–Nike 파트너 연결이 동작합니다. 현재 Strava 경로에서 검증해 만든 FIT는 비공개 로컬
-실행 폴더에 남습니다. 사용자는 개별 FIT 하나를 별도의 비공개 위치로 복사한 뒤, FIT 활동을
-공식 지원하는 다른 서비스에 직접 가져올 수 있습니다.
+NRC Volt Sync가 자동 업로드하는 목적지는 Garmin Connect 한 곳이며, 그 뒤에는 사용자의
+Garmin–Nike 파트너 연결이 동작합니다. HealthKit 설정에서 `--fit-export-dir`을 지정하면
+검증된 개별 FIT가 선택한 비공개 폴더에도 생깁니다. FIT 가져오기를 공식 지원하는 다른
+서비스에 사용자가 직접 넣을 수 있습니다.
 
 전체 실행 폴더나 FIT를 공개하면 안 됩니다. FIT에는 시각, GPS 경로, 심박 등 건강 정보가
 들어갈 수 있습니다. 여러 서비스로 자동 전송하는 공통 버튼은 만들 수 없으며 목적지마다
@@ -90,8 +100,7 @@ Apple 공식 문서상 HealthKit 프레임워크가 macOS에도 존재하지만 
 - [운동 경로 데이터](https://developer.apple.com/documentation/healthkit/hkworkoutroute)
 - [HealthKit 권한](https://developer.apple.com/documentation/healthkit/authorizing-access-to-health-data)
 
-[이슈 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2)에 공개한 다음 구조가
-Strava 없는 자동 경로입니다.
+버전 0.3에 구현된 Strava 없는 자동 경로는 다음과 같습니다.
 
 ```text
 애플워치 기본 운동 → 아이폰 HealthKit → 로컬 보조 앱과 전송함

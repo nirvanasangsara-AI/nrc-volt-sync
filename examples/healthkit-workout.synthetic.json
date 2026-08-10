@@ -1,0 +1,46 @@
+{
+  "activity_type": "running",
+  "calories": 100,
+  "device_name": "Synthetic Watch",
+  "distance_m": 1500,
+  "duration_s": 580,
+  "end_date": "2024-03-01T00:10:00Z",
+  "id": "11111111-2222-4333-8444-555555555555",
+  "name": "Synthetic Apple Health Run",
+  "route": [
+    {
+      "altitude_m": 10,
+      "latitude": 10,
+      "longitude": 20,
+      "offset_s": 0,
+      "speed_m_s": null
+    },
+    {
+      "altitude_m": 12,
+      "latitude": 10.001,
+      "longitude": 20.001,
+      "offset_s": 600,
+      "speed_m_s": 2.5
+    }
+  ],
+  "samples": {
+    "distance": [
+      { "offset_s": 0, "value": 0 },
+      { "offset_s": 600, "value": 1500 }
+    ],
+    "ground_contact_time": [],
+    "heart_rate": [
+      { "offset_s": 2, "value": 140 },
+      { "offset_s": 599, "value": 145 }
+    ],
+    "running_power": [],
+    "running_speed": [],
+    "stride_length": [],
+    "vertical_oscillation": []
+  },
+  "schema": "io.github.nrcvoltsync.healthkit.workout",
+  "schema_version": 1,
+  "source_bundle_id": "com.example.synthetic-health",
+  "start_date": "2024-03-01T00:00:00Z",
+  "timezone_offset_s": 32400
+}

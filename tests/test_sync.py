@@ -73,7 +73,7 @@ def test_sync_activity_uploads_and_records_only_minimum_state(tmp_path, monkeypa
 
         assert result.status == "uploaded"
         assert result.garmin_id == "202"
-        assert state.get(101)["status"] == "uploaded"
+        assert state.get("strava", "101")["status"] == "uploaded"
         assert "response_json" not in columns
 
 
@@ -94,7 +94,7 @@ def test_sync_activity_detects_existing_garmin_run(tmp_path, monkeypatch) -> Non
         )
 
         assert result.status == "already_on_garmin"
-        assert state.get(101)["garmin_id"] == "202"
+        assert state.get("strava", "101")["garmin_id"] == "202"
 
 
 def test_sync_many_reports_failures_instead_of_hiding_them(tmp_path, monkeypatch) -> None:
@@ -108,7 +108,7 @@ def test_sync_many_reports_failures_instead_of_hiding_them(tmp_path, monkeypatch
     def fake_sync_activity(_strava, _state, activity, **_kwargs):
         if activity["id"] == 102:
             raise RuntimeError("synthetic provider failure")
-        return sync.SyncResult(101, "uploaded", "Synthetic Run", 5000.0)
+        return sync.SyncResult("strava", "101", "uploaded", "Synthetic Run", 5000.0)
 
     monkeypatch.setattr(sync, "StravaClient", lambda: fake_strava)
     monkeypatch.setattr(sync, "State", FakeState)
@@ -118,6 +118,7 @@ def test_sync_many_reports_failures_instead_of_hiding_them(tmp_path, monkeypatch
 
     assert len(batch.results) == 1
     assert batch.scanned == 2
-    assert batch.failures[0].strava_id == 102
+    assert batch.failures[0].source == "strava"
+    assert batch.failures[0].source_id == "102"
     assert batch.failures[0].error_type == "RuntimeError"
     assert "synthetic provider failure" in batch.failures[0].message

@@ -1,26 +1,28 @@
 # NRC Volt Sync
 
-> Free, local, open-source Apple Watch to Nike Run Club run synchronization through Strava and Garmin Connect. Runs on macOS and preserves available FIT sensor data without fabricating missing GPS, heart rate, or cadence.
+> Free, local, open-source Apple Watch and Apple Health to Nike Run Club synchronization through Garmin Connect, with or without Strava. Preserves available FIT sensor data without fabricating missing GPS, heart rate, or cadence.
 
 Canonical repository: https://github.com/nirvanasangsara-AI/nrc-volt-sync
 License: MIT
-Current release line: 0.2 beta
-Language: Python 3.12
-Interface: command-line application and optional macOS LaunchAgent
+Current release line: 0.3 beta
+Languages: Python 3.12 and Swift 6 package / iOS 17 app
+Interface: iPhone HealthKit companion, command-line application, and optional macOS LaunchAgent
 
 ## Primary use case
 
-A runner records a run with Apple's native Workout app. Apple Health uploads it to Strava. NRC Volt Sync reads the authorized Strava run and streams, encodes and validates a Garmin FIT activity, checks for duplicates, uploads it to Garmin Connect, and relies on the user's official Garmin–Nike partner connection to deliver the run to Nike Run Club.
+A runner records a run with Apple's native Workout app. The included iPhone companion writes an
+authorized HealthKit run to a private Files outbox, or Strava supplies it through OAuth. NRC Volt
+Sync validates the source, creates a Garmin FIT activity, checks for duplicates, uploads it to Garmin
+Connect, and relies on the user's Garmin–Nike partner connection for delivery to Nike Run Club.
 
 ## Important boundaries
 
 - This is not a hosted service and never receives users' credentials or health data.
 - Nike has no public activity-import API used by this project.
-- Version 0.2 requires Strava for unattended input; a free private relay account is sufficient.
-- A zero-Strava historical fallback can use Apple Health export and a time-stamped outdoor GPX,
-  but it is manual and may omit sensor data.
-- Apple does not permit macOS apps to read HealthKit data. Automatic zero-Strava ingestion requires
-  a user-authorized iPhone companion and is tracked in GitHub issue 2.
+- Version 0.3 includes direct Strava-free input through a user-authorized iPhone companion and
+  private Files/iCloud Drive outbox; Strava remains an optional source.
+- Apple does not permit macOS apps to read HealthKit data, so direct input requires the companion.
+- Free Apple Personal Team profiles expire after 7 days and require weekly reinstall; no paid publisher service exists.
 - Garmin access uses the unofficial community `garminconnect` client.
 - Only running activities are synchronized.
 - Missing sensor streams are left missing; no route or health data is invented.
@@ -42,6 +44,10 @@ A runner records a run with Apple's native Workout app. Apple Health uploads it 
 - docs/BETA_TESTING.md: privacy-safe end-to-end beta test sequence
 - docs/WITHOUT_STRAVA.md: current free alternatives and the direct Apple Health source boundary
 - docs/WITHOUT_STRAVA.ko.md: Korean no-Strava guide and data-fidelity limits
+- docs/HEALTHKIT_COMPANION.md: English direct-source build, setup, timing, and portable FIT guide
+- docs/HEALTHKIT_COMPANION.ko.md: Korean direct-source guide
+- schema/healthkit-workout-v1.schema.json: machine-readable direct-source interchange contract
+- examples/healthkit-workout.synthetic.json: fabricated, privacy-safe example payload
 
 ## Verification commands
 

@@ -5,10 +5,19 @@ provider integrations remain beta.
 
 ## Unreleased
 
-- Document free paths for runners without an existing Strava account, including the manual Apple
-  Health export fallback and its sensor-data limits.
-- Publish the source boundary and roadmap for a direct iPhone HealthKit companion and portable FIT
-  outbox.
+## 0.3.0 - 2026-08-10
+
+- Add an open-source iOS 17 HealthKit companion and user-selected Files outbox for direct,
+  Strava-free Apple Watch run ingestion.
+- Preserve real HealthKit route and sensor timestamps, including heart rate, distance, speed, power,
+  stride length, vertical oscillation, and ground-contact time; never synthesize cadence.
+- Add `configure-healthkit`, source auto-selection, historical HealthKit backfill, optional portable
+  FIT export, Garmin-origin filtering, and automatic-service compatibility.
+- Migrate the duplicate database from a Strava-only key to `(source, source ID)` while preserving
+  prior completion state and removing legacy raw provider payloads.
+- Add synthetic Python and Swift schema tests plus a CI-built unsigned iOS simulator target.
+- Document free Apple personal signing, iOS background timing, privacy boundaries, and manual FIT
+  reuse for services with official import support.
 
 ## 0.2.0 - 2026-08-10
 

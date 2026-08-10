@@ -11,6 +11,8 @@ uv run coverage report
 uv run ruff check .
 uv run bandit -q -r src/nrc_volt_sync
 uv run pip-audit
+swift test --package-path ios
+xcodegen --spec ios/project.yml --project ios
 ```
 
 ## Privacy rules for contributions

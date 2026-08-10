@@ -1,4 +1,13 @@
-from nrc_volt_sync.fit import activity_fingerprint, encode_activity, validate_activity
+from garmin_fit_sdk import Decoder, Stream
+from test_healthkit import synthetic_payload
+
+from nrc_volt_sync.fit import (
+    activity_fingerprint,
+    encode_activity,
+    encode_healthkit_workout,
+    validate_activity,
+)
+from nrc_volt_sync.healthkit import parse_workout
 
 
 def synthetic_activity() -> tuple[dict, dict]:
@@ -76,3 +85,23 @@ def test_encodes_summary_only_activity_without_inventing_sensor_data() -> None:
     assert validation.distance_m == 5000.0
     assert validation.gps_records == 0
     assert validation.heart_rate_records == 0
+
+
+def test_encodes_sparse_healthkit_samples_at_real_timestamps() -> None:
+    workout = parse_workout(synthetic_payload())
+
+    data = encode_healthkit_workout(workout)
+    validation = validate_activity(data, expected_distance_m=1500, expected_elapsed_s=600)
+    decoded, errors = Decoder(Stream.from_byte_array(bytearray(data))).read()
+    records = decoded["record_mesgs"]
+    dynamics = next(record for record in records if record.get("power") == 250)
+
+    assert not errors
+    assert validation.record_count == 5
+    assert validation.gps_records == 2
+    assert validation.heart_rate_records == 2
+    assert dynamics["enhanced_speed"] == 2.6
+    assert dynamics["step_length"] == 1100
+    assert dynamics["vertical_oscillation"] == 80
+    assert dynamics["stance_time"] == 250
+    assert all("cadence" not in record for record in records)

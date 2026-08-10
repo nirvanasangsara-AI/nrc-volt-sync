@@ -1,7 +1,7 @@
 [project]
 name = "nrc-volt-sync"
-version = "0.2.0"
-description = "Free personal Apple Watch/Strava to Garmin Connect bridge for Nike Run Club"
+version = "0.3.0"
+description = "Free Apple Health or Strava bridge to Garmin Connect and Nike Run Club"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "MIT"

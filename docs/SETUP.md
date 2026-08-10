@@ -2,9 +2,8 @@
 
 This page lists everything to prepare before installing NRC Volt Sync. Complete the checkboxes in order.
 
-Version 0.2 uses Strava as its automatic source. If the runner has no Strava account, read
-[WITHOUT_STRAVA.md](WITHOUT_STRAVA.md) before continuing; it distinguishes the free relay, manual
-Apple Health export, and planned direct HealthKit paths.
+Version 0.3 accepts either the included direct iPhone HealthKit companion or Strava. Choose at least
+one source. For the zero-Strava path, complete [HEALTHKIT_COMPANION.md](HEALTHKIT_COMPANION.md).
 
 ## 1. Hardware and operating system
 
@@ -14,9 +13,21 @@ Apple Health export, and planned direct HealthKit paths.
 - [ ] macOS with Python 3.12
 - [ ] `uv` installed: `uv --version`
 
-The watch and phone do not have to be connected to the Mac. The workout must eventually reach Apple Health and Strava over the internet.
+The watch and phone do not have to remain connected to the Mac. The workout must reach Apple Health,
+and the selected Files outbox or Strava must synchronize before the Mac can process it.
 
-## 2. Strava and Apple Health
+## 2. Choose an Apple Health input
+
+Direct, no-Strava source:
+
+- [ ] Full Xcode and free Apple ID are available for personal iPhone signing
+- [ ] Included companion is installed and has Apple Health read permission
+- [ ] A private Files/iCloud Drive outbox is available on the iPhone and Mac
+
+Follow [HEALTHKIT_COMPANION.md](HEALTHKIT_COMPANION.md). Free Apple Personal Team profiles expire
+after 7 days and require weekly reinstall.
+
+Or use Strava:
 
 - [ ] A Strava account
 - [ ] Strava iPhone app → **Settings → Manage Apps and Devices → Health** is connected
@@ -27,7 +38,7 @@ Official guide: [Apple Health and Strava](https://support.strava.com/en-us/artic
 
 Only activities recorded with Apple's native Workout app inside Strava's supported import window are eligible for this Apple Health import path.
 
-## 3. Your own Strava API application
+## 3. Your own Strava API application (Strava source only)
 
 Every user should create a separate personal API app. Never share another person's client secret.
 
@@ -65,15 +76,19 @@ Nike does not provide a public API for this project to verify the partner switch
 git clone https://github.com/nirvanasangsara-AI/nrc-volt-sync.git
 cd nrc-volt-sync
 uv sync
-uv run nrc-volt-sync configure-strava
+uv run nrc-volt-sync configure-healthkit --outbox "/path/to/private/outbox"
 uv run nrc-volt-sync configure-garmin
 uv run nrc-volt-sync doctor
 ```
 
+For the Strava source, run `configure-strava` instead of `configure-healthkit`. Both may be
+configured; automatic mode processes HealthKit first and uses Garmin duplicate checks.
+
 Expected `doctor` results:
 
 - `python_3_12`: true
-- `strava_configured`: true
+- `at_least_one_source_configured`: true
+- either `healthkit_outbox_configured` or `strava_configured`: true
 - `garmin_configured`: true
 - `private_app_directory`: true
 - `nike_garmin_link`: manual verification reminder

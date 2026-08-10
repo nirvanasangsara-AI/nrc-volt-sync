@@ -1,29 +1,34 @@
 # NRC Volt Sync
 
-**애플워치 러닝을 Strava와 Garmin Connect를 거쳐 Nike Run Club(NRC)에 전달하는 무료 macOS 로컬 동기화 도구입니다.** 공식 명칭은 Nike Run Club이지만, 많이 검색하는 **Nike Running Club** 검색어로도 찾을 수 있게 정리했습니다.
+**애플워치·Apple 건강 러닝을 Strava 사용 여부와 관계없이 Garmin Connect를 거쳐 Nike Run Club(NRC)에 전달하는 무료 로컬 동기화 도구입니다.** 공식 명칭은 Nike Run Club이지만, 많이 검색하는 **Nike Running Club** 검색어로도 찾을 수 있게 정리했습니다.
 
-[English](README.md) · [설치 준비 체크리스트](docs/SETUP.ko.md) · [Strava 없는 방법](docs/WITHOUT_STRAVA.ko.md) · [개인정보 안내](PRIVACY.md) · [문제 해결](docs/TROUBLESHOOTING.md) · [베타 테스트](docs/BETA_TESTING.md)
+[English](README.md) · [설치 준비 체크리스트](docs/SETUP.ko.md) · [Apple 건강 직접 연결](docs/HEALTHKIT_COMPANION.ko.md) · [Strava 없는 방법](docs/WITHOUT_STRAVA.ko.md) · [개인정보 안내](PRIVACY.md) · [문제 해결](docs/TROUBLESHOOTING.md)
 
-애플 기본 운동 앱으로 기록한 러닝이 Strava에는 들어가지만 NRC에는 나타나지 않는 문제를 해결하기 위해 만들었습니다. 자신의 Strava 기록을 읽어 검증된 Garmin FIT 파일을 만들고 Garmin Connect에 올린 뒤, Nike가 공식 지원하는 Garmin 파트너 연결을 통해 NRC로 전달합니다.
+애플 기본 운동 앱으로 기록한 러닝이 NRC에는 나타나지 않는 문제를 해결하기 위해 만들었습니다. 자신의 Apple 건강 전송함 또는 Strava 기록을 읽어 검증된 Garmin FIT 파일을 만들고 Garmin Connect에 올린 뒤 Garmin–Nike 파트너 연결을 통해 NRC로 전달합니다.
 
 > 개인 데이터 이동을 위한 베타 소프트웨어입니다. Nike, Strava, Garmin, Apple이 보증하거나 제휴한 제품이 아닙니다. Garmin 업로드는 커뮤니티의 비공식 클라이언트를 사용하므로 Garmin의 변경에 따라 작동이 중단될 수 있습니다.
 
 ## 왜 만들었나요?
 
-Nike Run Club에는 외부 활동을 넣는 공개 API가 없습니다. 반면 Apple 건강은 애플 기본 운동 기록을 Strava에 자동 업로드할 수 있고, NRC는 Garmin을 공식 파트너로 지원합니다. 이 프로젝트는 유료 동기화 서비스 없이 그 사이를 연결하며, 없는 운동 데이터를 임의로 만들지 않습니다.
+Nike Run Club에는 외부 활동을 넣는 공개 API가 없습니다. NRC는 Garmin을 파트너로 지원하므로 이 프로젝트는 자신의 Apple 건강 또는 Strava 원본을 검증된 FIT로 바꿔 그 경로를 사용합니다. HealthKit 직접 입력은 오픈소스 아이폰 보조 앱이며 유료 동기화 서비스나 운영자 서버가 없습니다.
 
 ```mermaid
 flowchart LR
     A["애플워치 기본 운동"] --> B["Apple 건강"]
-    B --> C["Strava API"]
-    C --> D["맥의 NRC Volt Sync"]
+    B --> C["아이폰 HealthKit 보조 앱"]
+    B --> S["선택 사항: Strava API"]
+    C --> O["비공개 Files 전송함"]
+    O --> D["맥의 NRC Volt Sync"]
+    S --> D
     D --> E["Garmin Connect"]
     E --> F["Nike Run Club"]
 ```
 
 ## 주요 기능
 
-- Strava에서 애플워치 러닝·트레일러닝·가상 러닝만 골라냅니다.
+- Strava 없이도 포함된 아이폰 보조 앱으로 Apple 건강의 Apple 원본 러닝을 읽습니다.
+- Strava의 애플워치 러닝·트레일러닝·가상 러닝 입력도 계속 지원합니다.
+- 원하는 비공개 폴더에 다른 서비스용 표준 FIT를 선택적으로 남깁니다.
 - 원본에 있는 GPS, 심박, 고도, 파워, 케이던스, 거리, 시간을 FIT에 보존합니다.
 - 세부 스트림이 없으면 실제 총거리와 시간만 담고 GPS·심박·케이던스를 만들지 않습니다.
 - Garmin 원본 기록은 건너뛰어 순환 업로드를 막습니다.
@@ -37,14 +42,13 @@ flowchart LR
 
 1. Python 3.12와 [`uv`](https://docs.astral.sh/uv/getting-started/installation/)가 설치된 Mac
 2. 애플 기본 운동 앱으로 러닝을 기록하는 Apple Watch와 iPhone
-3. Apple 건강의 **자동 업로드**를 켠 무료 Strava 계정
-4. 콜백 도메인을 `localhost`로 만든 본인 소유의 무료 [Strava API 앱](https://www.strava.com/settings/api)
-5. 무료 Garmin Connect 계정
-6. NRC의 **설정 → 파트너**에서 연결한 Garmin 계정
+3. 입력원 하나 선택: 포함된 아이폰 HealthKit 보조 앱 또는 Apple 건강 **자동 업로드**를 켠 무료 Strava 계정
+4. 직접 입력은 전체 Xcode와 개인 서명용 무료 Apple ID, Strava 입력은 본인 소유의 무료 [Strava API 앱](https://www.strava.com/settings/api)
+5. NRC의 **설정 → 파트너**에서 연결한 무료 Garmin Connect 계정
 
 이 프로젝트 자체에는 유료 구독이 없습니다. 각 외부 서비스의 계정 정책과 제공 여부는 해당 회사가 관리합니다.
 
-Strava를 평소 쓰지 않거나 계정 자체를 만들고 싶지 않다면 [Strava를 쓰지 않는 사람을 위한 방법](docs/WITHOUT_STRAVA.ko.md)을 먼저 확인하세요. 현재 자동 경로에서는 무료 비공개 Strava 계정을 중계소로만 쓸 수 있습니다. Strava를 완전히 제외한 자동 입력은 아이폰 HealthKit 보조 앱이 필요하며 [이슈 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2)에서 공개 개발 항목으로 관리합니다.
+Strava를 쓰지 않으면 버전 0.3의 [Apple 건강 직접 연결](docs/HEALTHKIT_COMPANION.ko.md)을 사용하세요. 무료 Apple Personal Team 프로필은 7일 후 만료돼 매주 다시 설치해야 하며 이 Apple 배포 제한을 설치 전에 명시했습니다.
 
 정확한 권한 스위치와 콜백 입력값은 명령을 실행하기 전에 [docs/SETUP.ko.md](docs/SETUP.ko.md)에서 확인하세요.
 
@@ -54,10 +58,12 @@ Strava를 평소 쓰지 않거나 계정 자체를 만들고 싶지 않다면 [S
 git clone https://github.com/nirvanasangsara-AI/nrc-volt-sync.git
 cd nrc-volt-sync
 uv sync
-uv run nrc-volt-sync configure-strava
+uv run nrc-volt-sync configure-healthkit --outbox "/비공개/전송함/경로"
 uv run nrc-volt-sync configure-garmin
 uv run nrc-volt-sync doctor
 ```
+
+HealthKit 대신 Strava를 입력원으로 쓰면 `configure-healthkit` 대신 `configure-strava`를 실행합니다.
 
 최근 러닝 한 건을 실제 업로드 없이 검증합니다.
 
@@ -112,7 +118,8 @@ Git 저장소에는 계정 비밀값이나 개인 운동 기록을 넣지 않습
 
 - 백그라운드 자동 서비스는 macOS를 지원합니다.
 - 걷기·자전거·근력운동은 NRC 대상이 아니므로 올리지 않습니다.
-- 케이던스는 Strava가 제공할 때만 보존하며 없는 값은 추정하지 않습니다.
+- HealthKit 백그라운드 실행 시각은 iOS가 정합니다. 늦으면 앱에서 최근 7일 내보내기를 누릅니다.
+- 케이던스는 입력원이 제공할 때만 보존하며 없는 값은 추정하지 않습니다.
 - Nike 공개 가져오기 API가 없어 Garmin 파트너 연결 상태에 의존합니다.
 - Garmin 인증과 업로드는 비공식 `garminconnect` 패키지를 사용하므로 속도 제한이나 서비스 변경의 영향을 받을 수 있습니다.
 
@@ -120,11 +127,11 @@ Git 저장소에는 계정 비밀값이나 개인 운동 기록을 넣지 않습
 
 ### 애플워치 기록을 NRC로 직접 보낼 수 있나요?
 
-Nike가 외부 기록용 공개 API를 제공하지 않아 직접 전송은 지원되지 않습니다. 이 도구는 자신의 Strava 데이터를 FIT로 바꿔 Garmin 파트너 경로를 사용합니다.
+Nike가 외부 기록용 공개 API를 제공하지 않아 Nike 서버로 직접 전송하지는 못합니다. 이 도구는 자신의 Apple 건강 또는 Strava 데이터를 FIT로 바꿔 Garmin 파트너 경로를 사용합니다.
 
 ### Strava를 사용하지 않으면 어떻게 하나요?
 
-버전 0.2의 자동 입력원은 무료 비공개 Strava 계정입니다. Strava 계정을 전혀 만들지 않으려면 Apple 건강 전체 내보내기에서 시간이 포함된 야외 GPX를 찾아 Garmin으로 수동 가져올 수 있지만, 전체 심박·케이던스·실내 정보와 자동 전달은 보장할 수 없습니다. 자세한 방법과 한계는 [docs/WITHOUT_STRAVA.ko.md](docs/WITHOUT_STRAVA.ko.md)에 있습니다.
+포함된 아이폰 HealthKit 보조 앱과 비공개 Files/iCloud Drive 전송함을 사용합니다. HealthKit에 실제 존재하는 GPS와 센서를 보존하고 Mac이 자동 처리합니다. [docs/HEALTHKIT_COMPANION.ko.md](docs/HEALTHKIT_COMPANION.ko.md)를 확인하세요.
 
 ### 무료인가요?
 
@@ -136,7 +143,7 @@ Nike가 외부 기록용 공개 API를 제공하지 않아 직접 전송은 지�
 
 ### 케이던스가 왜 없나요?
 
-Strava가 모든 Apple 건강 러닝의 케이던스를 공개하지 않습니다. 원본 스트림이 있으면 보존하고 없으면 빈 상태로 둡니다.
+Strava와 HealthKit 직접 조회 모두 모든 Apple 건강 러닝의 케이던스를 제공하지는 않습니다. 원본 스트림이 있으면 보존하고 없으면 빈 상태로 둡니다.
 
 ## 개발과 기여
 
@@ -145,9 +152,14 @@ uv sync --dev
 uv run coverage run -m pytest -q
 uv run coverage report
 uv run ruff check .
+swift test --package-path ios
 ```
 
 공개 이슈에 실제 FIT 파일, 토큰, 이메일, 활동 ID, GPS 경로를 첨부하지 마세요. 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md)를 확인하세요.
+
+직접 입력 규격은 [`schema/healthkit-workout-v1.schema.json`](schema/healthkit-workout-v1.schema.json)에
+공개했고 `examples/`에는 명백한 합성 예제가 있습니다. iOS 화면에 종속되지 않고 개인정보를
+보내지 않는 별도 입력 어댑터도 이 규격으로 만들 수 있습니다.
 
 ## 감사, 라이선스와 상표
 
