@@ -2,11 +2,11 @@
 
 **애플워치 러닝을 Strava와 Garmin Connect를 거쳐 Nike Run Club(NRC)에 전달하는 무료 macOS 로컬 동기화 도구입니다.** 공식 명칭은 Nike Run Club이지만, 많이 검색하는 **Nike Running Club** 검색어로도 찾을 수 있게 정리했습니다.
 
-[English](README.md) · [설치 준비 체크리스트](docs/SETUP.ko.md) · [개인정보 안내](PRIVACY.md) · [문제 해결](docs/TROUBLESHOOTING.md)
+[English](README.md) · [설치 준비 체크리스트](docs/SETUP.ko.md) · [개인정보 안내](PRIVACY.md) · [문제 해결](docs/TROUBLESHOOTING.md) · [베타 테스트](docs/BETA_TESTING.md)
 
 애플 기본 운동 앱으로 기록한 러닝이 Strava에는 들어가지만 NRC에는 나타나지 않는 문제를 해결하기 위해 만들었습니다. 자신의 Strava 기록을 읽어 검증된 Garmin FIT 파일을 만들고 Garmin Connect에 올린 뒤, Nike가 공식 지원하는 Garmin 파트너 연결을 통해 NRC로 전달합니다.
 
-> 개인 데이터 이동을 위한 알파 소프트웨어입니다. Nike, Strava, Garmin, Apple이 보증하거나 제휴한 제품이 아닙니다. Garmin 업로드는 커뮤니티의 비공식 클라이언트를 사용하므로 Garmin의 변경에 따라 작동이 중단될 수 있습니다.
+> 개인 데이터 이동을 위한 베타 소프트웨어입니다. Nike, Strava, Garmin, Apple이 보증하거나 제휴한 제품이 아닙니다. Garmin 업로드는 커뮤니티의 비공식 클라이언트를 사용하므로 Garmin의 변경에 따라 작동이 중단될 수 있습니다.
 
 ## 왜 만들었나요?
 
@@ -31,6 +31,7 @@ flowchart LR
 - 시험 실행, 기간별 과거 기록 복구, 15분 또는 원하는 주기의 자동 실행을 지원합니다.
 - 계정 정보와 운동 파일은 저장소 밖에 소유자 전용 권한으로 보관합니다.
 - `status` 출력의 모든 계정값을 자동으로 가립니다.
+- 일부 활동이 실패하면 오류 종료코드로 알려 백그라운드 오류가 숨지 않고 다음 실행에서 재시도됩니다.
 
 ## 설치 전에 준비할 것
 
@@ -103,6 +104,8 @@ Git 저장소에는 계정 비밀값이나 개인 운동 기록을 넣지 않습
 
 이 폴더에는 Strava OAuth 토큰, Garmin 세션 토큰, 활동 식별자, GPS·건강 데이터가 포함된 FIT 파일, 로그, 중복 방지 DB가 들어갈 수 있습니다. 모두 소유자 전용 권한으로 생성되지만 이 폴더나 FIT, 화면 캡처, 가리지 않은 로그는 공개하지 마세요.
 
+버전 0.2는 예전 DB에 저장됐던 Garmin 원본 응답을 자동 제거하되 업로드 상태와 식별자는 보존합니다.
+
 ## 제한사항
 
 - 백그라운드 자동 서비스는 macOS를 지원합니다.
@@ -133,12 +136,15 @@ Strava가 모든 Apple 건강 러닝의 케이던스를 공개하지 않습니�
 
 ```bash
 uv sync --dev
-uv run pytest -q
+uv run coverage run -m pytest -q
+uv run coverage report
 uv run ruff check .
 ```
 
 공개 이슈에 실제 FIT 파일, 토큰, 이메일, 활동 ID, GPS 경로를 첨부하지 마세요. 자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md)를 확인하세요.
 
-## 라이선스와 상표
+## 감사, 라이선스와 상표
 
-MIT License. Nike Run Club, NRC, Apple Watch, Strava, Garmin, Garmin Connect는 각 소유자의 상표이며 상호운용성 설명 목적으로만 사용했습니다.
+이 프로젝트는 Ron Klinkien과 기여자들의 [`python-garminconnect`](https://github.com/cyberjunky/python-garminconnect), Garmin [FIT SDK](https://developer.garmin.com/fit/download/), [HTTPX](https://github.com/encode/httpx)를 사용합니다. 각각의 라이선스는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 구분해 적었습니다.
+
+NRC Volt Sync 자체 코드는 MIT License입니다. Nike Run Club, NRC, Apple Watch, Strava, Garmin, Garmin Connect는 각 소유자의 상표이며 상호운용성 설명 목적으로만 사용했습니다.

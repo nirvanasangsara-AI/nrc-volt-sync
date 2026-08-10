@@ -103,7 +103,8 @@ def encode_activity(detail: dict[str, Any], streams: dict[str, dict[str, Any]]) 
         raise FitDataError("Activity has no UTC start date")
     times = _data(streams, "time")
     distances = _data(streams, "distance")
-    if len(times) < 2 or len(distances) < 2:
+    summary_only = len(times) < 2 or len(distances) < 2
+    if summary_only:
         # Some Apple Watch uploads retain only activity-level distance and time in
         # Strava. Preserve those real summary values in two endpoint records;
         # never fabricate a route, heart rate, or cadence stream.
@@ -120,6 +121,15 @@ def encode_activity(detail: dict[str, Any], streams: dict[str, dict[str, Any]]) 
     cadences = _data(streams, "cadence")
     watts = _data(streams, "watts")
     moving = _data(streams, "moving")
+    if summary_only:
+        # Partial sensor arrays cannot be aligned to the synthesized endpoint
+        # timeline safely. Keep only real activity-level summary values.
+        latlng = []
+        altitudes = []
+        heart_rates = []
+        cadences = []
+        watts = []
+        moving = []
 
     start_dt = _parse_utc(str(detail["start_date"]))
     start_time = int(start_dt.timestamp()) - FIT_EPOCH_S

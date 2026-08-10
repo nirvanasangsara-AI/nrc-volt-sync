@@ -59,7 +59,13 @@ def test_encodes_summary_only_activity_without_inventing_sensor_data() -> None:
         "elapsed_time": 1800,
         "average_speed": 2.778,
     }
-    streams = {"time": {"data": [0, 1800]}, "moving": {"data": [True, True]}}
+    streams = {
+        "time": {"data": [0, 1800]},
+        "moving": {"data": [True, True]},
+        # Orphan sensor data cannot be aligned because the distance stream is missing.
+        "heartrate": {"data": [140, 141]},
+        "latlng": {"data": [[10.0, 20.0], [10.1, 20.1]]},
+    }
 
     data = encode_activity(activity, streams)
     validation = validate_activity(

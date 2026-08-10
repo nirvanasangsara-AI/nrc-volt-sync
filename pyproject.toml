@@ -1,6 +1,6 @@
 [project]
 name = "nrc-volt-sync"
-version = "0.1.0"
+version = "0.2.0"
 description = "Free personal Apple Watch/Strava to Garmin Connect bridge for Nike Run Club"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -16,7 +16,7 @@ keywords = [
     "workout-sync",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS",
@@ -34,6 +34,9 @@ nrc-volt-sync = "nrc_volt_sync.cli:main"
 
 [dependency-groups]
 dev = [
+    "bandit>=1.9.2",
+    "coverage>=7.10.7",
+    "pip-audit>=2.9.0",
     "pytest>=8.4.2",
     "ruff>=0.12.12",
 ]
@@ -44,6 +47,13 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/nrc_volt_sync"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
 
 [tool.ruff]
 line-length = 100

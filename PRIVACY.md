@@ -32,6 +32,7 @@ The Garmin password is passed to the authentication client during setup and is n
 - Config files and tokens are created with mode `0600`; data directories use `0700`.
 - `status` replaces every persisted account value with `<stored>` and abbreviates the home directory as `~`.
 - HTTP client request logs are suppressed at normal log level.
+- The state database stores only the minimum duplicate-prevention fields; version 0.2 migrates away any legacy raw Garmin response payload.
 
 ## Before sharing diagnostics
 
