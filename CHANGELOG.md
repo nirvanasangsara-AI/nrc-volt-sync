@@ -3,6 +3,13 @@
 All notable changes are documented here. NRC Volt Sync follows semantic versioning while the
 provider integrations remain beta.
 
+## Unreleased
+
+- Document free paths for runners without an existing Strava account, including the manual Apple
+  Health export fallback and its sensor-data limits.
+- Publish the source boundary and roadmap for a direct iPhone HealthKit companion and portable FIT
+  outbox.
+
 ## 0.2.0 - 2026-08-10
 
 - Return a non-zero exit code when any activity fails, while continuing the remaining batch.

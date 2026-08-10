@@ -29,6 +29,18 @@ flowchart TB
 
 No maintainer-operated server exists. The providers and the user's Mac are the only network and storage boundaries.
 
+## Source boundary and the no-Strava roadmap
+
+Version 0.2 has one implemented automatic source: the Strava API. Apple documents that macOS apps
+cannot read or write HealthKit data, so the Mac process cannot independently discover Apple Watch
+workouts. The planned no-Strava source uses a separately authorized iPhone HealthKit companion and a
+private local outbox. See [WITHOUT_STRAVA.md](WITHOUT_STRAVA.md) and
+[issue 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2).
+
+The intended source-neutral boundary is a validated activity model plus a portable FIT outbox.
+Garmin/NRC is the first destination. Future automatic destinations must use their own supported APIs
+and user authorization rather than sharing credentials or scraping private endpoints.
+
 ## Duplicate strategy
 
 The local state uses the Strava activity ID as the primary key and stores a fingerprint based on start time, rounded distance, elapsed time, and activity type. Before upload, Garmin activities within one day of the source start are compared using:

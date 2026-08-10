@@ -2,7 +2,7 @@
 
 **애플워치 러닝을 Strava와 Garmin Connect를 거쳐 Nike Run Club(NRC)에 전달하는 무료 macOS 로컬 동기화 도구입니다.** 공식 명칭은 Nike Run Club이지만, 많이 검색하는 **Nike Running Club** 검색어로도 찾을 수 있게 정리했습니다.
 
-[English](README.md) · [설치 준비 체크리스트](docs/SETUP.ko.md) · [개인정보 안내](PRIVACY.md) · [문제 해결](docs/TROUBLESHOOTING.md) · [베타 테스트](docs/BETA_TESTING.md)
+[English](README.md) · [설치 준비 체크리스트](docs/SETUP.ko.md) · [Strava 없는 방법](docs/WITHOUT_STRAVA.ko.md) · [개인정보 안내](PRIVACY.md) · [문제 해결](docs/TROUBLESHOOTING.md) · [베타 테스트](docs/BETA_TESTING.md)
 
 애플 기본 운동 앱으로 기록한 러닝이 Strava에는 들어가지만 NRC에는 나타나지 않는 문제를 해결하기 위해 만들었습니다. 자신의 Strava 기록을 읽어 검증된 Garmin FIT 파일을 만들고 Garmin Connect에 올린 뒤, Nike가 공식 지원하는 Garmin 파트너 연결을 통해 NRC로 전달합니다.
 
@@ -43,6 +43,8 @@ flowchart LR
 6. NRC의 **설정 → 파트너**에서 연결한 Garmin 계정
 
 이 프로젝트 자체에는 유료 구독이 없습니다. 각 외부 서비스의 계정 정책과 제공 여부는 해당 회사가 관리합니다.
+
+Strava를 평소 쓰지 않거나 계정 자체를 만들고 싶지 않다면 [Strava를 쓰지 않는 사람을 위한 방법](docs/WITHOUT_STRAVA.ko.md)을 먼저 확인하세요. 현재 자동 경로에서는 무료 비공개 Strava 계정을 중계소로만 쓸 수 있습니다. Strava를 완전히 제외한 자동 입력은 아이폰 HealthKit 보조 앱이 필요하며 [이슈 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2)에서 공개 개발 항목으로 관리합니다.
 
 정확한 권한 스위치와 콜백 입력값은 명령을 실행하기 전에 [docs/SETUP.ko.md](docs/SETUP.ko.md)에서 확인하세요.
 
@@ -119,6 +121,10 @@ Git 저장소에는 계정 비밀값이나 개인 운동 기록을 넣지 않습
 ### 애플워치 기록을 NRC로 직접 보낼 수 있나요?
 
 Nike가 외부 기록용 공개 API를 제공하지 않아 직접 전송은 지원되지 않습니다. 이 도구는 자신의 Strava 데이터를 FIT로 바꿔 Garmin 파트너 경로를 사용합니다.
+
+### Strava를 사용하지 않으면 어떻게 하나요?
+
+버전 0.2의 자동 입력원은 무료 비공개 Strava 계정입니다. Strava 계정을 전혀 만들지 않으려면 Apple 건강 전체 내보내기에서 시간이 포함된 야외 GPX를 찾아 Garmin으로 수동 가져올 수 있지만, 전체 심박·케이던스·실내 정보와 자동 전달은 보장할 수 없습니다. 자세한 방법과 한계는 [docs/WITHOUT_STRAVA.ko.md](docs/WITHOUT_STRAVA.ko.md)에 있습니다.
 
 ### 무료인가요?
 

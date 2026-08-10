@@ -2,6 +2,10 @@
 
 This page lists everything to prepare before installing NRC Volt Sync. Complete the checkboxes in order.
 
+Version 0.2 uses Strava as its automatic source. If the runner has no Strava account, read
+[WITHOUT_STRAVA.md](WITHOUT_STRAVA.md) before continuing; it distinguishes the free relay, manual
+Apple Health export, and planned direct HealthKit paths.
+
 ## 1. Hardware and operating system
 
 - [ ] Apple Watch and iPhone

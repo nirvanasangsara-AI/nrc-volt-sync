@@ -2,7 +2,7 @@
 
 **Free, local Apple Watch → Strava → Garmin Connect → Nike Run Club (NRC) run sync for macOS.** Also discoverable for the common search phrase **Nike Running Club**; the official product name is Nike Run Club.
 
-[한국어 문서](README.ko.md) · [Setup checklist](docs/SETUP.md) · [Privacy](PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Beta testing](docs/BETA_TESTING.md)
+[한국어 문서](README.ko.md) · [Setup checklist](docs/SETUP.md) · [Without Strava](docs/WITHOUT_STRAVA.md) · [Privacy](PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Beta testing](docs/BETA_TESTING.md)
 
 NRC Volt Sync helps runners whose workouts recorded with the native Apple Watch Workout app reach Strava but do not appear in Nike Run Club. People searching for Apple Watch to **Nike Running Club** sync are looking for the same NRC workflow. The tool reads the runner's own Strava activities, creates validated Garmin FIT files, uploads them to Garmin Connect, and lets the official Garmin–Nike partner connection deliver those runs to NRC.
 
@@ -46,6 +46,8 @@ Prepare these first:
 6. Garmin connected inside NRC under **Settings → Partners**.
 
 No paid subscription is required by this project. Service availability and account requirements are controlled by the providers.
+
+Do not already use Strava, or refuse to create a Strava account? Read [Using NRC Volt Sync without an existing Strava account](docs/WITHOUT_STRAVA.md). The current automatic path can use a free private Strava account only as a relay. A fully automatic, completely Strava-free source requires an iPhone HealthKit companion and is tracked publicly in [issue 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2).
 
 For the exact permission switches, callback values, and a printable checklist, read [docs/SETUP.md](docs/SETUP.md) before running any command.
 
@@ -138,6 +140,10 @@ Version 0.2 automatically removes legacy raw Garmin response payloads from the d
 ### Can I sync Apple Watch runs directly to Nike Run Club?
 
 Not through a public Nike import API. This project uses the supported Garmin partner path after converting the runner's own Strava data to FIT.
+
+### What if I do not use Strava?
+
+A free private Strava account is the only unattended source supported in version 0.2. Without any Strava account, Apple Health can be exported and a time-stamped outdoor GPX can be imported into Garmin manually, but complete heart rate, cadence, indoor detail, and automatic delivery are not guaranteed. See [docs/WITHOUT_STRAVA.md](docs/WITHOUT_STRAVA.md).
 
 ### Is NRC Volt Sync free?
 
