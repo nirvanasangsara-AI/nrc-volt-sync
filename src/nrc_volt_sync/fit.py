@@ -11,6 +11,8 @@ from typing import Any
 from garmin_fit_sdk import FIT_EPOCH_S, Decoder, Encoder, Stream
 from garmin_fit_sdk.profile import Profile
 
+from .healthkit import HealthWorkout
+
 
 class FitDataError(ValueError):
     pass
@@ -45,11 +47,16 @@ def _semicircles(degrees: float) -> int:
 
 
 def _positive_number(value: Any) -> float | None:
+    number = _finite_number(value)
+    return number if number is not None and number >= 0 else None
+
+
+def _finite_number(value: Any) -> float | None:
     try:
         number = float(value)
     except (TypeError, ValueError):
         return None
-    return number if math.isfinite(number) and number >= 0 else None
+    return number if math.isfinite(number) else None
 
 
 def _summary(values: list[Any]) -> tuple[float | None, float | None]:
@@ -61,7 +68,7 @@ def _summary(values: list[Any]) -> tuple[float | None, float | None]:
 
 
 def _elevation_change(altitudes: list[Any]) -> tuple[float, float]:
-    clean = [_positive_number(value) for value in altitudes]
+    clean = [_finite_number(value) for value in altitudes]
     ascent = 0.0
     descent = 0.0
     previous: float | None = None
@@ -306,6 +313,157 @@ def encode_activity(detail: dict[str, Any], streams: dict[str, dict[str, Any]]) 
     return bytes(encoder.close())
 
 
+def encode_healthkit_workout(workout: HealthWorkout) -> bytes:
+    """Encode real HealthKit samples on their own timestamps without interpolation."""
+    start_time = int(workout.start.timestamp()) - FIT_EPOCH_S
+    elapsed_s = round(workout.elapsed_s)
+    end_time = start_time + elapsed_s
+    serial_number = int(workout.source_id.replace("-", "")[-8:], 16)
+    records: dict[int, dict[str, Any]] = {}
+
+    def record_at(offset_s: float) -> dict[str, Any]:
+        timestamp = start_time + min(elapsed_s, max(0, round(offset_s)))
+        return records.setdefault(
+            timestamp,
+            {"mesg_num": Profile["mesg_num"]["RECORD"], "timestamp": timestamp},
+        )
+
+    # Endpoint records make summary-only workouts structurally valid; they contain
+    # no invented route, sensor, or distance fields.
+    record_at(0)
+    record_at(workout.elapsed_s)
+    altitudes: list[float] = []
+    route_speeds: list[float] = []
+    for point in workout.route:
+        record = record_at(point.offset_s)
+        record["position_lat"] = _semicircles(point.latitude)
+        record["position_long"] = _semicircles(point.longitude)
+        if point.altitude_m is not None:
+            record["enhanced_altitude"] = point.altitude_m
+            altitudes.append(point.altitude_m)
+        if point.speed_m_s is not None:
+            record["enhanced_speed"] = point.speed_m_s
+            route_speeds.append(point.speed_m_s)
+
+    field_mapping = {
+        "heart_rate": ("heart_rate", lambda value: min(255, round(value))),
+        "distance": ("distance", float),
+        "running_power": ("power", lambda value: min(65_534, round(value))),
+        "running_speed": ("enhanced_speed", float),
+        # HealthKit uses metres/seconds while these FIT fields use millimetres.
+        "stride_length": ("step_length", lambda value: value * 1000),
+        "vertical_oscillation": ("vertical_oscillation", lambda value: value * 1000),
+        "ground_contact_time": ("stance_time", lambda value: value * 1000),
+    }
+    for sample_name, values in workout.samples.items():
+        fit_name, convert = field_mapping[sample_name]
+        for sample in values:
+            record_at(sample.offset_s)[fit_name] = convert(sample.value)
+
+    heart_rates = [value.value for value in workout.samples.get("heart_rate", ())]
+    powers = [value.value for value in workout.samples.get("running_power", ())]
+    sample_speeds = [value.value for value in workout.samples.get("running_speed", ())]
+    average_hr, max_hr = _summary(heart_rates)
+    average_power, max_power = _summary(powers)
+    all_speeds = route_speeds + sample_speeds
+    max_speed = max(all_speeds) if all_speeds else None
+    average_speed = workout.distance_m / workout.duration_s if workout.duration_s else None
+    ascent, descent = _elevation_change(altitudes)
+
+    messages: list[dict[str, Any]] = [
+        {
+            "mesg_num": Profile["mesg_num"]["FILE_ID"],
+            "type": "activity",
+            "manufacturer": "development",
+            "product": 0,
+            "time_created": start_time,
+            "serial_number": serial_number,
+        },
+        {
+            "mesg_num": Profile["mesg_num"]["DEVICE_INFO"],
+            "device_index": "creator",
+            "manufacturer": "development",
+            "product": 0,
+            "product_name": "NRC Volt Sync HealthKit",
+            "serial_number": serial_number,
+            "software_version": 0.3,
+            "timestamp": start_time,
+        },
+        {
+            "mesg_num": Profile["mesg_num"]["EVENT"],
+            "timestamp": start_time,
+            "event": "timer",
+            "event_type": "start",
+        },
+        *[records[timestamp] for timestamp in sorted(records)],
+        {
+            "mesg_num": Profile["mesg_num"]["EVENT"],
+            "timestamp": end_time,
+            "event": "timer",
+            "event_type": "stop_all",
+        },
+    ]
+
+    common_summary: dict[str, Any] = {
+        "timestamp": end_time,
+        "start_time": start_time,
+        "total_elapsed_time": elapsed_s,
+        "total_timer_time": workout.duration_s,
+        "total_distance": workout.distance_m,
+        "sport": "running",
+        "sub_sport": "generic",
+        "total_ascent": round(ascent),
+        "total_descent": round(descent),
+        "avg_speed": average_speed,
+    }
+    optional = {
+        "max_speed": max_speed,
+        "avg_heart_rate": round(average_hr) if average_hr is not None else None,
+        "max_heart_rate": round(max_hr) if max_hr is not None else None,
+        "avg_power": round(average_power) if average_power is not None else None,
+        "max_power": round(max_power) if max_power is not None else None,
+        "total_calories": round(workout.calories) if workout.calories is not None else None,
+    }
+    common_summary.update({key: value for key, value in optional.items() if value is not None})
+
+    lap = dict(common_summary)
+    lap.update(
+        {
+            "mesg_num": Profile["mesg_num"]["LAP"],
+            "message_index": 0,
+            "event": "lap",
+            "event_type": "stop",
+            "lap_trigger": "session_end",
+        }
+    )
+    messages.append(lap)
+    session = dict(common_summary)
+    session.update(
+        {
+            "mesg_num": Profile["mesg_num"]["SESSION"],
+            "message_index": 0,
+            "event": "session",
+            "event_type": "stop",
+            "first_lap_index": 0,
+            "num_laps": 1,
+        }
+    )
+    messages.append(session)
+    messages.append(
+        {
+            "mesg_num": Profile["mesg_num"]["ACTIVITY"],
+            "timestamp": end_time,
+            "num_sessions": 1,
+            "local_timestamp": end_time + workout.timezone_offset_s,
+            "total_timer_time": workout.duration_s,
+        }
+    )
+    encoder = Encoder()
+    for message in messages:
+        encoder.write_mesg(message)
+    return bytes(encoder.close())
+
+
 def validate_activity(
     data: bytes, *, expected_distance_m: float, expected_elapsed_s: float
 ) -> FitValidation:
@@ -352,6 +510,21 @@ def write_validated_fit(
         data,
         expected_distance_m=float(detail.get("distance") or 0),
         expected_elapsed_s=float(detail.get("elapsed_time") or 0),
+    )
+    destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    destination.write_bytes(data)
+    destination.chmod(0o600)
+    return validation
+
+
+def write_validated_healthkit_fit(
+    workout: HealthWorkout, destination: Path
+) -> FitValidation:
+    data = encode_healthkit_workout(workout)
+    validation = validate_activity(
+        data,
+        expected_distance_m=workout.distance_m,
+        expected_elapsed_s=workout.elapsed_s,
     )
     destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     destination.write_bytes(data)

@@ -6,7 +6,8 @@ NRC Volt Sync is local-first. It has no developer-operated server, analytics, te
 
 The program communicates directly from the user's Mac with:
 
-- Strava OAuth and API to read the user's authorized activities and streams.
+- A user-selected local/iCloud Drive/Files outbox written by the included iPhone HealthKit companion.
+- Strava OAuth and API to read authorized activities and streams, only when Strava is configured.
 - Garmin Connect to authenticate, check duplicates, and upload FIT activities.
 - Nike Run Club indirectly through the user's existing Garmin–Nike partner connection.
 
@@ -19,11 +20,17 @@ Runtime data is stored under `~/Library/Application Support/NRCVoltSync/` with o
 - Garmin email and session tokens
 - Strava client ID, client secret, OAuth access token, and refresh token
 - Strava and Garmin activity identifiers
+- HealthKit workout UUIDs and configured outbox/export directory paths
 - Activity dates, device names, distances, and synchronization results
 - FIT files containing GPS routes, timestamps, heart rate, altitude, power, or cadence
 - Rotating logs and a SQLite duplicate-prevention database
 
 The Garmin password is passed to the authentication client during setup and is not written to the NRC Volt Sync configuration file.
+
+The iPhone companion requests read-only HealthKit access and writes only Apple-origin running
+workouts to the folder selected through Apple's system picker. It has no analytics, network client,
+maintainer endpoint, or hosted credential store. That outbox and any optional portable FIT directory
+can contain precise health and location data and must remain private.
 
 ## Repository safeguards
 
@@ -32,7 +39,9 @@ The Garmin password is passed to the authentication client during setup and is n
 - Config files and tokens are created with mode `0600`; data directories use `0700`.
 - `status` replaces every persisted account value with `<stored>` and abbreviates the home directory as `~`.
 - HTTP client request logs are suppressed at normal log level.
-- The state database stores only the minimum duplicate-prevention fields; version 0.2 migrates away any legacy raw Garmin response payload.
+- The state database stores only the minimum duplicate-prevention fields; version 0.2 migrates away
+  legacy raw Garmin response payloads and version 0.3 preserves those minimal rows in a
+  source-neutral schema.
 
 ## Before sharing diagnostics
 

@@ -1,29 +1,34 @@
 # NRC Volt Sync
 
-**Free, local Apple Watch → Strava → Garmin Connect → Nike Run Club (NRC) run sync for macOS.** Also discoverable for the common search phrase **Nike Running Club**; the official product name is Nike Run Club.
+**Free, local Apple Watch / Apple Health → Garmin Connect → Nike Run Club (NRC) run sync, with or without Strava.** Also discoverable for the common search phrase **Nike Running Club**; the official product name is Nike Run Club.
 
-[한국어 문서](README.ko.md) · [Setup checklist](docs/SETUP.md) · [Without Strava](docs/WITHOUT_STRAVA.md) · [Privacy](PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Beta testing](docs/BETA_TESTING.md)
+[한국어 문서](README.ko.md) · [Setup checklist](docs/SETUP.md) · [Direct Apple Health companion](docs/HEALTHKIT_COMPANION.md) · [Without Strava](docs/WITHOUT_STRAVA.md) · [Privacy](PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-NRC Volt Sync helps runners whose workouts recorded with the native Apple Watch Workout app reach Strava but do not appear in Nike Run Club. People searching for Apple Watch to **Nike Running Club** sync are looking for the same NRC workflow. The tool reads the runner's own Strava activities, creates validated Garmin FIT files, uploads them to Garmin Connect, and lets the official Garmin–Nike partner connection deliver those runs to NRC.
+NRC Volt Sync helps when a run recorded with Apple's native Watch Workout app does not appear in Nike Run Club. People searching for Apple Watch to **Nike Running Club** sync are looking for the same NRC workflow. The tool reads the runner's own Apple Health outbox or Strava activities, creates validated Garmin FIT files, uploads them to Garmin Connect, and lets the Garmin–Nike partner connection deliver those runs to NRC.
 
 > Beta software for personal data portability. It is not affiliated with or endorsed by Nike, Strava, Garmin, or Apple. Garmin upload access uses an unofficial community client and may break when Garmin changes its private API.
 
 ## Why this exists
 
-Nike Run Club does not provide a public activity-import API. Apple Workout and Apple Health can automatically upload native workouts to Strava, while NRC officially supports Garmin as a connected partner. This project bridges that gap without inventing workout data and without requiring a paid sync service.
+Nike Run Club does not provide a public activity-import API. NRC supports Garmin as a connected partner, so this project converts the runner's own Apple Health or Strava source into validated FIT and uses that partner path. The direct HealthKit source is an open-source iPhone companion; no paid sync service or maintainer server is required.
 
 ```mermaid
 flowchart LR
     A["Apple Watch Workout"] --> B["Apple Health"]
-    B --> C["Strava API"]
-    C --> D["NRC Volt Sync on Mac"]
-    D --> E["Garmin Connect"]
+    B --> C["iPhone HealthKit companion"]
+    B --> S["Optional Strava API"]
+    C --> D["Private Files outbox"]
+    S --> M["NRC Volt Sync on Mac"]
+    D --> M
+    M --> E["Garmin Connect"]
     E --> F["Nike Run Club"]
 ```
 
 ## Features
 
-- Syncs Apple Watch runs, trail runs, and virtual runs found in Strava.
+- Reads Apple-origin running workouts directly from HealthKit through the included iPhone companion, without Strava.
+- Also supports Apple Watch runs, trail runs, and virtual runs found in Strava.
+- Writes optional portable FIT copies for user-directed import into other services.
 - Preserves available GPS, heart rate, altitude, power, cadence, distance, and timing streams.
 - Creates summary-only FIT records when Strava has only real total distance and time; it never fabricates GPS, heart rate, or cadence.
 - Skips Garmin-origin activities to prevent circular imports.
@@ -40,14 +45,13 @@ Prepare these first:
 
 1. A Mac with Python 3.12 and [`uv`](https://docs.astral.sh/uv/getting-started/installation/).
 2. An Apple Watch and iPhone using Apple's native Workout app for runs.
-3. A free Strava account with Apple Health **Automatic Uploads** enabled.
-4. Your own free [Strava API application](https://www.strava.com/settings/api), using `localhost` as the callback domain.
-5. A free Garmin Connect account.
-6. Garmin connected inside NRC under **Settings → Partners**.
+3. Choose one input: the included iPhone HealthKit companion, or a free Strava account with Apple Health **Automatic Uploads** enabled.
+4. For the direct source: full Xcode and a free Apple ID for personal device signing. For Strava: your own free [Strava API application](https://www.strava.com/settings/api).
+5. A free Garmin Connect account, connected inside NRC under **Settings → Partners**.
 
 No paid subscription is required by this project. Service availability and account requirements are controlled by the providers.
 
-Do not already use Strava, or refuse to create a Strava account? Read [Using NRC Volt Sync without an existing Strava account](docs/WITHOUT_STRAVA.md). The current automatic path can use a free private Strava account only as a relay. A fully automatic, completely Strava-free source requires an iPhone HealthKit companion and is tracked publicly in [issue 2](https://github.com/nirvanasangsara-AI/nrc-volt-sync/issues/2).
+Do not use Strava? Version 0.3 includes the direct source. Follow [Direct Apple Health companion](docs/HEALTHKIT_COMPANION.md). Apple's free Personal Team profile expires after 7 days and requires weekly reinstall; that Apple distribution limit is documented before setup.
 
 For the exact permission switches, callback values, and a printable checklist, read [docs/SETUP.md](docs/SETUP.md) before running any command.
 
@@ -59,7 +63,13 @@ cd nrc-volt-sync
 uv sync
 ```
 
-Connect your own Strava API app:
+Choose either the direct HealthKit outbox:
+
+```bash
+uv run nrc-volt-sync configure-healthkit --outbox "/path/to/private/outbox"
+```
+
+or connect your own Strava API app:
 
 ```bash
 uv run nrc-volt-sync configure-strava
@@ -131,7 +141,8 @@ Version 0.2 automatically removes legacy raw Garmin response payloads from the d
 - macOS is the supported unattended-service platform.
 - Only workouts identified as runs are sent to NRC; cycling, walking, and strength workouts are intentionally ignored.
 - Apple Workout → Strava automatic import currently applies only to native Apple Workout activities within Strava's supported import window.
-- Cadence is preserved only when Strava exposes a cadence stream. Missing cadence is never estimated.
+- HealthKit background delivery timing is controlled by iOS; opening the companion and exporting recent runs is the reliable fallback.
+- Cadence is preserved only when a source exposes it. The direct HealthKit schema deliberately omits unavailable cadence; missing cadence is never estimated.
 - Nike exposes no public import API, so delivery depends on the Garmin partner connection.
 - Garmin authentication and upload rely on the community `garminconnect` package and can be rate-limited or changed without notice.
 
@@ -139,11 +150,11 @@ Version 0.2 automatically removes legacy raw Garmin response payloads from the d
 
 ### Can I sync Apple Watch runs directly to Nike Run Club?
 
-Not through a public Nike import API. This project uses the supported Garmin partner path after converting the runner's own Strava data to FIT.
+Not through a public Nike import API. This project uses the supported Garmin partner path after converting the runner's own Apple Health or Strava data to FIT.
 
 ### What if I do not use Strava?
 
-A free private Strava account is the only unattended source supported in version 0.2. Without any Strava account, Apple Health can be exported and a time-stamped outdoor GPX can be imported into Garmin manually, but complete heart rate, cadence, indoor detail, and automatic delivery are not guaranteed. See [docs/WITHOUT_STRAVA.md](docs/WITHOUT_STRAVA.md).
+Use the included iPhone HealthKit companion and a private Files/iCloud Drive outbox. It preserves the HealthKit fields that exist and the Mac processes them automatically. See [docs/HEALTHKIT_COMPANION.md](docs/HEALTHKIT_COMPANION.md).
 
 ### Is NRC Volt Sync free?
 
@@ -159,7 +170,7 @@ It checks a local state database and compares date, distance, and elapsed time a
 
 ### Why is cadence missing?
 
-Strava does not expose running cadence for every Apple Health activity. The converter preserves a cadence stream when present and leaves it blank when absent.
+Neither Strava nor the direct HealthKit queries expose cadence for every Apple Health activity. The converter preserves a cadence stream when a source has one and leaves it blank when absent.
 
 ## Development
 
@@ -168,9 +179,15 @@ uv sync --dev
 uv run coverage run -m pytest -q
 uv run coverage report
 uv run ruff check .
+swift test --package-path ios
 ```
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) and never attach real FIT files, tokens, email addresses, activity IDs, or GPS traces to public issues.
+
+The direct-source interchange contract is published as
+[`schema/healthkit-workout-v1.schema.json`](schema/healthkit-workout-v1.schema.json), with an
+obviously synthetic example under `examples/`. This makes independent, privacy-preserving source
+adapters possible without depending on the iOS UI.
 
 ## Acknowledgements, license, and trademarks
 

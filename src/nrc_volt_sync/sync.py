@@ -18,7 +18,8 @@ RUN_TYPES = {"run", "trailrun", "virtualrun"}
 
 @dataclass(frozen=True)
 class SyncResult:
-    strava_id: int
+    source: str
+    source_id: str
     status: str
     name: str
     distance_m: float
@@ -28,7 +29,8 @@ class SyncResult:
 
 @dataclass(frozen=True)
 class SyncFailure:
-    strava_id: int | None
+    source: str
+    source_id: str | None
     error_type: str
     message: str
 
@@ -79,7 +81,7 @@ def sync_activity(
     if not _is_run(activity):
         return None
     strava_id = int(activity["id"])
-    if state.is_complete(strava_id):
+    if state.is_complete("strava", strava_id):
         return None
     detail = strava.activity(strava_id)
     name = str(detail.get("name") or f"Strava Run {strava_id}")
@@ -89,7 +91,8 @@ def sync_activity(
     device_name = str(detail.get("device_name") or "") or None
     if _is_garmin_source(detail):
         state.record(
-            strava_id=strava_id,
+            source="strava",
+            source_id=strava_id,
             fingerprint=fingerprint,
             activity_start=str(detail["start_date"]),
             distance_m=distance_m,
@@ -97,7 +100,7 @@ def sync_activity(
             status="skipped",
             error="Garmin-origin activity",
         )
-        return SyncResult(strava_id, "skipped_garmin_source", name, distance_m)
+        return SyncResult("strava", str(strava_id), "skipped_garmin_source", name, distance_m)
     if only_apple_watch and not _is_apple_watch_source(detail):
         return None
 
@@ -105,7 +108,8 @@ def sync_activity(
     fit_path = FIT_DIR / f"strava-{strava_id}.fit"
     validation = write_validated_fit(detail, streams, fit_path)
     state.record(
-        strava_id=strava_id,
+        source="strava",
+        source_id=strava_id,
         fingerprint=fingerprint,
         activity_start=str(detail["start_date"]),
         distance_m=distance_m,
@@ -113,7 +117,7 @@ def sync_activity(
         status="validated",
     )
     if dry_run:
-        return SyncResult(strava_id, "validated", name, distance_m, validation)
+        return SyncResult("strava", str(strava_id), "validated", name, distance_m, validation)
 
     garmin = connect_garmin()
     start = _start(detail)
@@ -123,7 +127,8 @@ def sync_activity(
     if existing:
         existing_id = garmin_activity_id(existing)
         state.record(
-            strava_id=strava_id,
+            source="strava",
+            source_id=strava_id,
             fingerprint=fingerprint,
             activity_start=str(detail["start_date"]),
             distance_m=distance_m,
@@ -131,7 +136,15 @@ def sync_activity(
             status="already_on_garmin",
             garmin_id=existing_id,
         )
-        return SyncResult(strava_id, "already_on_garmin", name, distance_m, validation, existing_id)
+        return SyncResult(
+            "strava",
+            str(strava_id),
+            "already_on_garmin",
+            name,
+            distance_m,
+            validation,
+            existing_id,
+        )
 
     try:
         response, confirmed = upload_and_confirm(
@@ -143,7 +156,8 @@ def sync_activity(
         )
         confirmed_id = garmin_activity_id(confirmed) or garmin_activity_id(response)
         state.record(
-            strava_id=strava_id,
+            source="strava",
+            source_id=strava_id,
             fingerprint=fingerprint,
             activity_start=str(detail["start_date"]),
             distance_m=distance_m,
@@ -152,10 +166,19 @@ def sync_activity(
             garmin_id=confirmed_id,
             increment_attempts=True,
         )
-        return SyncResult(strava_id, "uploaded", name, distance_m, validation, confirmed_id)
+        return SyncResult(
+            "strava",
+            str(strava_id),
+            "uploaded",
+            name,
+            distance_m,
+            validation,
+            confirmed_id,
+        )
     except Exception as error:
         state.record(
-            strava_id=strava_id,
+            source="strava",
+            source_id=strava_id,
             fingerprint=fingerprint,
             activity_start=str(detail["start_date"]),
             distance_m=distance_m,
@@ -201,7 +224,8 @@ def sync_many(
                 raw_id = activity.get("id")
                 failures.append(
                     SyncFailure(
-                        strava_id=int(raw_id) if raw_id is not None else None,
+                        source="strava",
+                        source_id=str(raw_id) if raw_id is not None else None,
                         error_type=type(error).__name__,
                         message=str(error)[:500],
                     )

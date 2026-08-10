@@ -29,9 +29,10 @@ from .config import (
     save_config,
 )
 from .garmin import configure_garmin
+from .healthkit_sync import sync_healthkit_many
 from .state import State
 from .strava import StravaClient, authorize
-from .sync import SyncResult, sync_many
+from .sync import SyncBatchResult, SyncFailure, SyncResult, sync_many
 
 # Only fixed /bin/launchctl argument lists are executed.
 LABEL = "io.github.nrcvoltsync"
@@ -95,6 +96,34 @@ def _configure_garmin(args: argparse.Namespace) -> int:
     return 0
 
 
+def _existing_directory(value: str, label: str) -> Path:
+    try:
+        path = Path(value).expanduser().resolve(strict=True)
+    except (OSError, RuntimeError) as error:
+        raise SystemExit(f"{label} is not accessible: {error}") from error
+    if not path.is_dir():
+        raise SystemExit(f"{label} must be an existing directory.")
+    return path
+
+
+def _configure_healthkit(args: argparse.Namespace) -> int:
+    raw_outbox = args.outbox or input("Apple Health outbox folder: ").strip()
+    if not raw_outbox:
+        raise SystemExit("Apple Health outbox folder is required.")
+    outbox = _existing_directory(raw_outbox, "Apple Health outbox")
+    config = load_config()
+    config["healthkit_outbox"] = str(outbox)
+    if args.fit_export_dir:
+        config["fit_export_dir"] = str(
+            _existing_directory(args.fit_export_dir, "FIT export destination")
+        )
+    elif args.no_fit_export:
+        config.pop("fit_export_dir", None)
+    save_config(config)
+    print("Apple Health outbox connection complete.")
+    return 0
+
+
 def _inspect(args: argparse.Namespace) -> int:
     with StravaClient() as client:
         detail = client.activity(args.activity_id)
@@ -130,25 +159,81 @@ def _print_result(result: SyncResult) -> None:
 
 
 def _sync(args: argparse.Namespace) -> int:
+    if args.limit < 1 or (args.after_days is not None and args.after_days < 1):
+        raise SystemExit("Limit and lookback days must be positive.")
     after = _date_epoch(args.after) if args.after else None
     before = _date_epoch(args.before, end=True) if args.before else None
     if args.after_days is not None:
         after = int((datetime.now(UTC) - timedelta(days=args.after_days)).timestamp())
+    source = args.source
+    config: dict[str, Any] = {}
+    if source in {"auto", "healthkit"}:
+        config = load_config()
+    strava_fields = {
+        "strava_client_id",
+        "strava_client_secret",
+        "strava_access_token",
+        "strava_refresh_token",
+        "strava_expires_at",
+    }
+    sources: list[str]
+    if source == "auto":
+        sources = []
+        if config.get("healthkit_outbox"):
+            sources.append("healthkit")
+        if strava_fields.issubset(config):
+            sources.append("strava")
+    else:
+        sources = [source]
+    if args.activity_id is not None:
+        sources = [item for item in sources if item == "strava"]
+    if args.healthkit_id is not None:
+        sources = [item for item in sources if item == "healthkit"]
+    if not sources:
+        raise SystemExit("No requested source is configured. Run a configure command first.")
+
+    results: list[SyncResult] = []
+    failures: list[SyncFailure] = []
+    scanned = 0
     with _single_instance():
-        batch = sync_many(
-            activity_id=args.activity_id,
-            after=after,
-            before=before,
-            limit=args.limit,
-            dry_run=args.dry_run,
-            only_apple_watch=not args.all_non_garmin,
-        )
+        for selected in sources:
+            remaining = max(0, args.limit - len(results))
+            if remaining == 0:
+                break
+            if selected == "healthkit":
+                outbox = config.get("healthkit_outbox")
+                if not outbox:
+                    raise SystemExit("Apple Health outbox is not configured.")
+                fit_export = config.get("fit_export_dir")
+                current = sync_healthkit_many(
+                    outbox=Path(str(outbox)),
+                    workout_id=args.healthkit_id,
+                    after=after,
+                    before=before,
+                    limit=remaining,
+                    dry_run=args.dry_run,
+                    fit_export_dir=Path(str(fit_export)) if fit_export else None,
+                )
+            else:
+                current = sync_many(
+                    activity_id=args.activity_id,
+                    after=after,
+                    before=before,
+                    limit=remaining,
+                    dry_run=args.dry_run,
+                    only_apple_watch=not args.all_non_garmin,
+                )
+            results.extend(current.results)
+            failures.extend(current.failures)
+            scanned += current.scanned
+    batch = SyncBatchResult(results=results, failures=failures, scanned=scanned)
     for result in batch.results:
         _print_result(result)
     for failure in batch.failures:
-        identifier = str(failure.strava_id) if failure.strava_id is not None else "unknown"
+        identifier = failure.source_id or "unknown"
         print(
-            f"FAILED activity {identifier}: {failure.error_type}: {failure.message}",
+            f"FAILED {failure.source} activity {identifier}: "
+            f"{failure.error_type}: {failure.message}",
             file=sys.stderr,
         )
     if batch.failures:
@@ -158,7 +243,7 @@ def _sync(args: argparse.Namespace) -> int:
         )
         return 1
     if not batch.results:
-        print("No new Apple Watch runs to upload.")
+        print("No new eligible runs to upload.")
     return 0
 
 
@@ -201,16 +286,28 @@ def _doctor(_args: argparse.Namespace) -> int:
         text=True,
         check=False,
     )
+    healthkit_value = config.get("healthkit_outbox")
+    healthkit_configured = bool(
+        healthkit_value and Path(str(healthkit_value)).expanduser().is_dir()
+    )
     checks = {
         "python_3_12": sys.version_info[:2] == (3, 12),
         "strava_configured": strava_fields.issubset(config),
+        "healthkit_outbox_configured": healthkit_configured,
+        "at_least_one_source_configured": healthkit_configured
+        or strava_fields.issubset(config),
         "garmin_configured": (GARMIN_TOKEN_DIR / "garmin_tokens.json").exists(),
         "private_app_directory": (APP_DIR.stat().st_mode & 0o077) == 0,
         "automatic_service_loaded": service.returncode == 0,
         "nike_garmin_link": "verify manually in NRC Settings > Partners",
     }
     print(json.dumps(checks, indent=2))
-    required = ("python_3_12", "strava_configured", "garmin_configured", "private_app_directory")
+    required = (
+        "python_3_12",
+        "at_least_one_source_configured",
+        "garmin_configured",
+        "private_app_directory",
+    )
     return 0 if all(checks[key] is True for key in required) else 1
 
 
@@ -288,12 +385,23 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--email")
     command.set_defaults(func=_configure_garmin)
 
+    command = sub.add_parser(
+        "configure-healthkit", help="Connect an iPhone Apple Health outbox folder"
+    )
+    command.add_argument("--outbox")
+    export = command.add_mutually_exclusive_group()
+    export.add_argument("--fit-export-dir")
+    export.add_argument("--no-fit-export", action="store_true")
+    command.set_defaults(func=_configure_healthkit)
+
     command = sub.add_parser("inspect-activity", help="Inspect activity and stream metadata")
     command.add_argument("activity_id", type=int)
     command.set_defaults(func=_inspect)
 
     command = sub.add_parser("sync", help="Sync Apple Watch runs")
+    command.add_argument("--source", choices=("auto", "strava", "healthkit"), default="auto")
     command.add_argument("--activity-id", type=int)
+    command.add_argument("--healthkit-id")
     command.add_argument("--after", help="YYYY-MM-DD")
     command.add_argument("--before", help="YYYY-MM-DD")
     command.add_argument("--after-days", type=int)

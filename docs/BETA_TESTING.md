@@ -1,6 +1,6 @@
 # Public beta testing
 
-Version 0.2 is a beta because Strava, Garmin Connect, and Nike Run Club can change behavior outside
+Version 0.3 is a beta because iOS background delivery, Strava, Garmin Connect, and Nike Run Club can change behavior outside
 this project's control. Automated tests use synthetic records and never require contributor
 credentials or health data.
 
@@ -9,15 +9,15 @@ credentials or health data.
 1. Complete `docs/SETUP.md`, then run `uv run nrc-volt-sync doctor`.
 2. Run `uv run nrc-volt-sync sync --after-days 14 --limit 1 --dry-run`.
 3. Upload one recent run and compare its date, distance, duration, route, and available heart rate in
-   Strava, Garmin Connect, and NRC.
+   Apple Health or Strava, Garmin Connect, and NRC.
 4. Run the same command again and verify that it does not create a duplicate.
 5. Install the automatic service only after that comparison passes.
 
 ## Test matrix
 
-Useful reports include the macOS version, Apple Watch model, whether the source was Apple Workout,
+Useful reports include the macOS/iOS versions, selected source, Apple Watch model, whether the source was Apple Workout,
 and whether the result reached Garmin and NRC. Test cases of particular value are outdoor GPS,
-indoor treadmill, missing cadence, delayed Strava import, and a second run within two minutes of the
+indoor treadmill, missing cadence, delayed HealthKit/Strava import, and a second run within two minutes of the
 first.
 
 ## Privacy-safe reports

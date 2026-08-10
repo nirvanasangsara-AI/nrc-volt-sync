@@ -17,3 +17,9 @@ installed by the package manager and remain governed by their own licenses.
 
 No source code from these projects is vendored into this repository. See `uv.lock` for the complete
 resolved dependency graph and the linked upstream projects for authoritative license texts.
+
+## Development tooling
+
+- [`XcodeGen`](https://github.com/yonaskolb/XcodeGen) is MIT-licensed. It generates the checked-in
+  iOS Xcode project from `ios/project.yml` and is used by CI to verify that the project is current.
+  XcodeGen is a build-time tool and is not shipped inside the app.
