@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible problem without exposing account or workout data
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach real FIT files, routes, screenshots, logs, emails, account IDs, activity IDs, tokens, cookies, or provider payloads. Use synthetic examples only.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed all personal, account, route, health, and credential data.
+          required: true
+        - label: I did not attach files from `~/Library/Application Support/NRCVoltSync/`.
+          required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Failing stage
+      options:
+        - Apple Health to Strava
+        - Strava authorization or download
+        - FIT conversion or validation
+        - Garmin authentication or upload
+        - Garmin to Nike Run Club
+        - Automatic macOS service
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.1.0 or commit hash
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction with synthetic data
+      description: Describe commands and behavior, replacing all identifiers and values with fabricated examples.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Redacted doctor output
+      description: Paste `uv run nrc-volt-sync doctor`; do not paste raw logs.
+      render: shell

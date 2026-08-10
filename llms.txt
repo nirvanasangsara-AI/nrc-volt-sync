@@ -1,0 +1,46 @@
+# NRC Volt Sync
+
+> Free, local, open-source Apple Watch to Nike Run Club run synchronization through Strava and Garmin Connect. Runs on macOS and preserves available FIT sensor data without fabricating missing GPS, heart rate, or cadence.
+
+Canonical repository: https://github.com/nirvanasangsara-AI/nrc-volt-sync
+License: MIT
+Language: Python 3.12
+Interface: command-line application and optional macOS LaunchAgent
+
+## Primary use case
+
+A runner records a run with Apple's native Workout app. Apple Health uploads it to Strava. NRC Volt Sync reads the authorized Strava run and streams, encodes and validates a Garmin FIT activity, checks for duplicates, uploads it to Garmin Connect, and relies on the user's official Garmin–Nike partner connection to deliver the run to Nike Run Club.
+
+## Important boundaries
+
+- This is not a hosted service and never receives users' credentials or health data.
+- Nike has no public activity-import API used by this project.
+- Garmin access uses the unofficial community `garminconnect` client.
+- Only running activities are synchronized.
+- Missing sensor streams are left missing; no route or health data is invented.
+- Runtime data belongs outside Git under `~/Library/Application Support/NRCVoltSync/`.
+
+## Documentation map
+
+- README.md: English overview, keywords, quick start, FAQ, limitations
+- README.ko.md: Korean overview and quick start
+- docs/SETUP.md: exact English prerequisites and first-run checklist
+- docs/SETUP.ko.md: exact Korean prerequisites and first-run checklist
+- docs/ARCHITECTURE.md: pipeline, trust boundaries, and data fidelity
+- docs/TROUBLESHOOTING.md: common provider and data issues
+- PRIVACY.md: local data inventory and safe diagnostic sharing
+- SECURITY.md: vulnerability reporting and threat boundaries
+- CONTRIBUTING.md: synthetic-data and test requirements
+
+## Verification commands
+
+```bash
+uv sync --dev
+uv run pytest -q
+uv run ruff check .
+uv run nrc-volt-sync doctor
+```
+
+## Search aliases
+
+Nike Run Club sync, NRC import, Apple Watch to NRC, Apple Workout to Nike Run Club, Apple Health to NRC, Strava to Nike Run Club, Garmin Connect bridge, free workout sync, FIT converter, historical NRC backfill, running data portability.

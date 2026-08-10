@@ -1,0 +1,52 @@
+[project]
+name = "nrc-volt-sync"
+version = "0.1.0"
+description = "Free personal Apple Watch/Strava to Garmin Connect bridge for Nike Run Club"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+keywords = [
+    "apple-watch",
+    "garmin-connect",
+    "nike-run-club",
+    "nrc",
+    "running",
+    "strava",
+    "workout-sync",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "garmin-fit-sdk>=21.188.0",
+    "garminconnect>=0.2.38",
+    "httpx>=0.28.1",
+]
+
+[project.scripts]
+nrc-volt-sync = "nrc_volt_sync.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "ruff>=0.12.12",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
