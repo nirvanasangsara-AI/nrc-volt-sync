@@ -2,11 +2,11 @@
 
 **Free, local Apple Watch → Strava → Garmin Connect → Nike Run Club (NRC) run sync for macOS.** Also discoverable for the common search phrase **Nike Running Club**; the official product name is Nike Run Club.
 
-[한국어 문서](README.ko.md) · [Setup checklist](docs/SETUP.md) · [Privacy](PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+[한국어 문서](README.ko.md) · [Setup checklist](docs/SETUP.md) · [Privacy](PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Beta testing](docs/BETA_TESTING.md)
 
 NRC Volt Sync helps runners whose workouts recorded with the native Apple Watch Workout app reach Strava but do not appear in Nike Run Club. People searching for Apple Watch to **Nike Running Club** sync are looking for the same NRC workflow. The tool reads the runner's own Strava activities, creates validated Garmin FIT files, uploads them to Garmin Connect, and lets the official Garmin–Nike partner connection deliver those runs to NRC.
 
-> Alpha software for personal data portability. It is not affiliated with or endorsed by Nike, Strava, Garmin, or Apple. Garmin upload access uses an unofficial community client and may break when Garmin changes its private API.
+> Beta software for personal data portability. It is not affiliated with or endorsed by Nike, Strava, Garmin, or Apple. Garmin upload access uses an unofficial community client and may break when Garmin changes its private API.
 
 ## Why this exists
 
@@ -32,6 +32,7 @@ flowchart LR
 - Installs an optional macOS LaunchAgent for unattended sync every 15 minutes or any interval you choose.
 - Stores credentials and workout files outside the repository with owner-only permissions.
 - Redacts every stored account field from `status` output.
+- Reports partial batch failures with a non-zero exit code so background errors are visible and retryable.
 
 ## Before you install
 
@@ -121,6 +122,8 @@ The repository contains no account credentials or workout history. Runtime data 
 
 That folder can contain Strava OAuth tokens, Garmin session tokens, activity identifiers, FIT files with routes and health data, logs, and the duplicate-prevention database. Files are created with owner-only permissions. Do not publish that folder, FIT files, screenshots, or unredacted logs. See [PRIVACY.md](PRIVACY.md).
 
+Version 0.2 automatically removes legacy raw Garmin response payloads from the duplicate-prevention database while preserving upload status and identifiers.
+
 ## Limitations
 
 - macOS is the supported unattended-service platform.
@@ -156,12 +159,15 @@ Strava does not expose running cadence for every Apple Health activity. The conv
 
 ```bash
 uv sync --dev
-uv run pytest -q
+uv run coverage run -m pytest -q
+uv run coverage report
 uv run ruff check .
 ```
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) and never attach real FIT files, tokens, email addresses, activity IDs, or GPS traces to public issues.
 
-## License and trademarks
+## Acknowledgements, license, and trademarks
 
-MIT License. Nike Run Club, NRC, Apple Watch, Strava, Garmin, and Garmin Connect are trademarks of their respective owners. Their names are used only to describe interoperability.
+NRC Volt Sync uses Ron Klinkien and contributors' [`python-garminconnect`](https://github.com/cyberjunky/python-garminconnect), Garmin's [FIT SDK](https://developer.garmin.com/fit/download/), and [HTTPX](https://github.com/encode/httpx). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for their separate licenses.
+
+NRC Volt Sync's own code is MIT-licensed. Nike Run Club, NRC, Apple Watch, Strava, Garmin, and Garmin Connect are trademarks of their respective owners. Their names are used only to describe interoperability.

@@ -17,5 +17,8 @@ jobs:
           python-version: "3.12"
           enable-cache: true
       - run: uv sync --locked --dev
-      - run: uv run pytest -q
+      - run: uv run coverage run -m pytest -q
+      - run: uv run coverage report
       - run: uv run ruff check .
+      - run: uv run bandit -q -r src/nrc_volt_sync
+      - run: uv run pip-audit

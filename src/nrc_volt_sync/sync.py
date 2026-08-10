@@ -26,6 +26,20 @@ class SyncResult:
     garmin_id: str | None = None
 
 
+@dataclass(frozen=True)
+class SyncFailure:
+    strava_id: int | None
+    error_type: str
+    message: str
+
+
+@dataclass(frozen=True)
+class SyncBatchResult:
+    results: list[SyncResult]
+    failures: list[SyncFailure]
+    scanned: int
+
+
 def _is_run(activity: dict[str, Any]) -> bool:
     sport = str(activity.get("sport_type") or activity.get("type") or "").lower()
     return sport in RUN_TYPES
@@ -136,7 +150,6 @@ def sync_activity(
             device_name=device_name,
             status="uploaded",
             garmin_id=confirmed_id,
-            response=response,
             increment_attempts=True,
         )
         return SyncResult(strava_id, "uploaded", name, distance_m, validation, confirmed_id)
@@ -162,8 +175,10 @@ def sync_many(
     limit: int = 25,
     dry_run: bool = False,
     only_apple_watch: bool = True,
-) -> list[SyncResult]:
+) -> SyncBatchResult:
     results: list[SyncResult] = []
+    failures: list[SyncFailure] = []
+    scanned = 0
     with StravaClient() as strava, State() as state:
         if activity_id is not None:
             activities = [strava.activity(activity_id)]
@@ -172,6 +187,7 @@ def sync_many(
         for activity in activities:
             if len(results) >= limit:
                 break
+            scanned += 1
             try:
                 result = sync_activity(
                     strava,
@@ -180,9 +196,17 @@ def sync_many(
                     dry_run=dry_run,
                     only_apple_watch=only_apple_watch,
                 )
-            except Exception:
+            except Exception as error:
                 LOGGER.exception("Activity %s failed", activity.get("id"))
+                raw_id = activity.get("id")
+                failures.append(
+                    SyncFailure(
+                        strava_id=int(raw_id) if raw_id is not None else None,
+                        error_type=type(error).__name__,
+                        message=str(error)[:500],
+                    )
+                )
                 continue
             if result is not None:
                 results.append(result)
-    return results
+    return SyncBatchResult(results=results, failures=failures, scanned=scanned)

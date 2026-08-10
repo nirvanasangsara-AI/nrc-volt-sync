@@ -6,8 +6,11 @@ Contributions that improve data fidelity, duplicate prevention, privacy, documen
 
 ```bash
 uv sync --dev
-uv run pytest -q
+uv run coverage run -m pytest -q
+uv run coverage report
 uv run ruff check .
+uv run bandit -q -r src/nrc_volt_sync
+uv run pip-audit
 ```
 
 ## Privacy rules for contributions

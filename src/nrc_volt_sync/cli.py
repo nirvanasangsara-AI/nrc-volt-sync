@@ -8,7 +8,7 @@ import logging
 import logging.handlers
 import os
 import plistlib
-import subprocess
+import subprocess  # nosec B404
 import sys
 import time
 from contextlib import contextmanager
@@ -33,8 +33,10 @@ from .state import State
 from .strava import StravaClient, authorize
 from .sync import SyncResult, sync_many
 
+# Only fixed /bin/launchctl argument lists are executed.
 LABEL = "io.github.nrcvoltsync"
 PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / f"{LABEL}.plist"
+LAUNCHCTL = "/bin/launchctl"
 
 
 def _logging(verbose: bool = False) -> None:
@@ -133,7 +135,7 @@ def _sync(args: argparse.Namespace) -> int:
     if args.after_days is not None:
         after = int((datetime.now(UTC) - timedelta(days=args.after_days)).timestamp())
     with _single_instance():
-        results = sync_many(
+        batch = sync_many(
             activity_id=args.activity_id,
             after=after,
             before=before,
@@ -141,9 +143,21 @@ def _sync(args: argparse.Namespace) -> int:
             dry_run=args.dry_run,
             only_apple_watch=not args.all_non_garmin,
         )
-    for result in results:
+    for result in batch.results:
         _print_result(result)
-    if not results:
+    for failure in batch.failures:
+        identifier = str(failure.strava_id) if failure.strava_id is not None else "unknown"
+        print(
+            f"FAILED activity {identifier}: {failure.error_type}: {failure.message}",
+            file=sys.stderr,
+        )
+    if batch.failures:
+        print(
+            f"Sync completed with {len(batch.failures)} failure(s); failed activities will retry.",
+            file=sys.stderr,
+        )
+        return 1
+    if not batch.results:
         print("No new Apple Watch runs to upload.")
     return 0
 
@@ -152,8 +166,9 @@ def _status(_args: argparse.Namespace) -> int:
     config = load_config()
     with State() as state:
         summary = state.summary()
-    service = subprocess.run(
-        ["launchctl", "print", f"gui/{os.getuid()}/{LABEL}"],
+    # Fixed absolute macOS system command with no shell interpolation.
+    service = subprocess.run(  # nosec B603
+        [LAUNCHCTL, "print", f"gui/{os.getuid()}/{LABEL}"],
         capture_output=True,
         text=True,
         check=False,
@@ -179,8 +194,9 @@ def _doctor(_args: argparse.Namespace) -> int:
         "strava_refresh_token",
         "strava_expires_at",
     }
-    service = subprocess.run(
-        ["launchctl", "print", f"gui/{os.getuid()}/{LABEL}"],
+    # Fixed absolute macOS system command with no shell interpolation.
+    service = subprocess.run(  # nosec B603
+        [LAUNCHCTL, "print", f"gui/{os.getuid()}/{LABEL}"],
         capture_output=True,
         text=True,
         check=False,
@@ -228,22 +244,30 @@ def _install_service(args: argparse.Namespace) -> int:
     temporary.replace(PLIST_PATH)
     PLIST_PATH.chmod(0o600)
     domain = f"gui/{os.getuid()}"
-    subprocess.run(
-        ["launchctl", "bootout", domain, str(PLIST_PATH)],
+    # Fixed absolute macOS system commands with no shell interpolation.
+    subprocess.run(  # nosec B603
+        [LAUNCHCTL, "bootout", domain, str(PLIST_PATH)],
         capture_output=True,
         check=False,
     )
-    subprocess.run(["launchctl", "bootstrap", domain, str(PLIST_PATH)], check=True)
-    subprocess.run(["launchctl", "enable", f"{domain}/{LABEL}"], check=True)
-    subprocess.run(["launchctl", "kickstart", f"{domain}/{LABEL}"], check=True)
+    subprocess.run(  # nosec B603
+        [LAUNCHCTL, "bootstrap", domain, str(PLIST_PATH)], check=True
+    )
+    subprocess.run(  # nosec B603
+        [LAUNCHCTL, "enable", f"{domain}/{LABEL}"], check=True
+    )
+    subprocess.run(  # nosec B603
+        [LAUNCHCTL, "kickstart", f"{domain}/{LABEL}"], check=True
+    )
     print(f"Installed and started automatic sync every {args.interval_minutes} minute(s).")
     return 0
 
 
 def _uninstall_service(_args: argparse.Namespace) -> int:
     domain = f"gui/{os.getuid()}"
-    subprocess.run(
-        ["launchctl", "bootout", domain, str(PLIST_PATH)],
+    # Fixed absolute macOS system command with no shell interpolation.
+    subprocess.run(  # nosec B603
+        [LAUNCHCTL, "bootout", domain, str(PLIST_PATH)],
         capture_output=True,
         check=False,
     )

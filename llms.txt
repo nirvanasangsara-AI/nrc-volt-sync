@@ -4,6 +4,7 @@
 
 Canonical repository: https://github.com/nirvanasangsara-AI/nrc-volt-sync
 License: MIT
+Current release line: 0.2 beta
 Language: Python 3.12
 Interface: command-line application and optional macOS LaunchAgent
 
@@ -31,12 +32,16 @@ A runner records a run with Apple's native Workout app. Apple Health uploads it 
 - PRIVACY.md: local data inventory and safe diagnostic sharing
 - SECURITY.md: vulnerability reporting and threat boundaries
 - CONTRIBUTING.md: synthetic-data and test requirements
+- THIRD_PARTY_NOTICES.md: direct dependency acknowledgements and separate licenses
+- CHANGELOG.md: release history
+- docs/BETA_TESTING.md: privacy-safe end-to-end beta test sequence
 
 ## Verification commands
 
 ```bash
 uv sync --dev
-uv run pytest -q
+uv run coverage run -m pytest -q
+uv run coverage report
 uv run ruff check .
 uv run nrc-volt-sync doctor
 ```

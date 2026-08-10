@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import json
 import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from .config import STATE_PATH, ensure_app_dirs
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS sync_item (
+TABLE_COLUMNS = """
     strava_id INTEGER PRIMARY KEY,
     fingerprint TEXT NOT NULL,
     activity_start TEXT NOT NULL,
@@ -19,12 +16,12 @@ CREATE TABLE IF NOT EXISTS sync_item (
     status TEXT NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
     garmin_id TEXT,
-    response_json TEXT,
     error TEXT,
     updated_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS sync_item_status ON sync_item(status);
 """
+CREATE_TABLE = f"CREATE TABLE IF NOT EXISTS sync_item ({TABLE_COLUMNS})"
+CREATE_INDEX = "CREATE INDEX IF NOT EXISTS sync_item_status ON sync_item(status)"
+SCHEMA_VERSION = 2
 
 
 class State:
@@ -33,9 +30,46 @@ class State:
         self.path = path
         self.connection = sqlite3.connect(path, timeout=30)
         self.connection.row_factory = sqlite3.Row
-        self.connection.executescript(SCHEMA)
-        self.connection.commit()
+        self._initialize_schema()
         path.chmod(0o600)
+
+    def _initialize_schema(self) -> None:
+        columns = {
+            str(row["name"])
+            for row in self.connection.execute("PRAGMA table_info(sync_item)").fetchall()
+        }
+        if "response_json" in columns:
+            self._migrate_remove_response_json()
+            return
+        with self.connection:
+            self.connection.execute(CREATE_TABLE)
+            self.connection.execute(CREATE_INDEX)
+            self.connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+    def _migrate_remove_response_json(self) -> None:
+        self.connection.execute("BEGIN IMMEDIATE")
+        try:
+            self.connection.execute("ALTER TABLE sync_item RENAME TO sync_item_legacy")
+            self.connection.execute(f"CREATE TABLE sync_item ({TABLE_COLUMNS})")
+            self.connection.execute(
+                """
+                INSERT INTO sync_item (
+                    strava_id, fingerprint, activity_start, distance_m, device_name,
+                    status, attempts, garmin_id, error, updated_at
+                )
+                SELECT
+                    strava_id, fingerprint, activity_start, distance_m, device_name,
+                    status, attempts, garmin_id, error, updated_at
+                FROM sync_item_legacy
+                """
+            )
+            self.connection.execute("DROP TABLE sync_item_legacy")
+            self.connection.execute(CREATE_INDEX)
+            self.connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            self.connection.commit()
+        except Exception:
+            self.connection.rollback()
+            raise
 
     def close(self) -> None:
         self.connection.close()
@@ -66,7 +100,6 @@ class State:
         device_name: str | None,
         status: str,
         garmin_id: str | None = None,
-        response: Any = None,
         error: str | None = None,
         increment_attempts: bool = False,
     ) -> None:
@@ -74,16 +107,13 @@ class State:
         attempts = int(existing["attempts"]) if existing else 0
         if increment_attempts:
             attempts += 1
-        response_json = None
-        if response is not None:
-            response_json = json.dumps(response, ensure_ascii=False, default=str)[:20_000]
         now = datetime.now(UTC).isoformat()
         self.connection.execute(
             """
             INSERT INTO sync_item (
                 strava_id, fingerprint, activity_start, distance_m, device_name,
-                status, attempts, garmin_id, response_json, error, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                status, attempts, garmin_id, error, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(strava_id) DO UPDATE SET
                 fingerprint = excluded.fingerprint,
                 activity_start = excluded.activity_start,
@@ -92,7 +122,6 @@ class State:
                 status = excluded.status,
                 attempts = excluded.attempts,
                 garmin_id = COALESCE(excluded.garmin_id, sync_item.garmin_id),
-                response_json = excluded.response_json,
                 error = excluded.error,
                 updated_at = excluded.updated_at
             """,
@@ -105,7 +134,6 @@ class State:
                 status,
                 attempts,
                 garmin_id,
-                response_json,
                 error,
                 now,
             ),

@@ -8,7 +8,7 @@ Include only synthetic examples and the smallest code excerpt necessary to expla
 
 ## Supported versions
 
-This project is currently alpha software. Security fixes target the latest commit on the default branch.
+This project is currently beta software. Security fixes target the latest release and the default branch.
 
 ## Credential model
 

@@ -13,10 +13,11 @@ import httpx
 from .config import load_config, save_config
 
 AUTH_URL = "https://www.strava.com/oauth/authorize"
-TOKEN_URL = "https://www.strava.com/oauth/token"
+# Public OAuth endpoint, not a credential.
+TOKEN_URL = "https://www.strava.com/oauth/token"  # nosec B105
 API_ROOT = "https://www.strava.com/api/v3"
 REDIRECT_URI = "http://localhost:8765/callback"
-USER_AGENT = "NRCVoltSync/0.1 personal-use"
+USER_AGENT = "NRCVoltSync/0.2 personal-use"
 
 
 class StravaError(RuntimeError):
