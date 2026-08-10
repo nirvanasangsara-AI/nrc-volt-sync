@@ -6,8 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "MIT"
 keywords = [
+    "apple-health",
     "apple-watch",
     "garmin-connect",
+    "healthkit",
     "nike-run-club",
     "nike-running-club",
     "nrc",

@@ -2,6 +2,10 @@
 
 NRC Volt Sync를 설치하기 전에 필요한 자료와 설정입니다. 위에서부터 차례로 확인하세요.
 
+버전 0.2는 Strava를 자동 입력원으로 사용합니다. Strava 계정이 없다면 먼저
+[Strava를 쓰지 않는 사람을 위한 방법](WITHOUT_STRAVA.ko.md)에서 무료 중계, Apple 건강
+수동 내보내기, 향후 HealthKit 직접 경로의 차이를 확인하세요.
+
 ## 1. 기기와 운영체제
 
 - [ ] Apple Watch와 iPhone

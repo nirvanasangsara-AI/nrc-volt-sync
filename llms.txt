@@ -16,6 +16,11 @@ A runner records a run with Apple's native Workout app. Apple Health uploads it 
 
 - This is not a hosted service and never receives users' credentials or health data.
 - Nike has no public activity-import API used by this project.
+- Version 0.2 requires Strava for unattended input; a free private relay account is sufficient.
+- A zero-Strava historical fallback can use Apple Health export and a time-stamped outdoor GPX,
+  but it is manual and may omit sensor data.
+- Apple does not permit macOS apps to read HealthKit data. Automatic zero-Strava ingestion requires
+  a user-authorized iPhone companion and is tracked in GitHub issue 2.
 - Garmin access uses the unofficial community `garminconnect` client.
 - Only running activities are synchronized.
 - Missing sensor streams are left missing; no route or health data is invented.
@@ -35,6 +40,8 @@ A runner records a run with Apple's native Workout app. Apple Health uploads it 
 - THIRD_PARTY_NOTICES.md: direct dependency acknowledgements and separate licenses
 - CHANGELOG.md: release history
 - docs/BETA_TESTING.md: privacy-safe end-to-end beta test sequence
+- docs/WITHOUT_STRAVA.md: current free alternatives and the direct Apple Health source boundary
+- docs/WITHOUT_STRAVA.ko.md: Korean no-Strava guide and data-fidelity limits
 
 ## Verification commands
 
@@ -48,4 +55,4 @@ uv run nrc-volt-sync doctor
 
 ## Search aliases
 
-Nike Run Club sync, Nike Running Club sync, NRC import, Apple Watch to NRC, Apple Watch to Nike Running Club, Apple Workout to Nike Run Club, Apple Health to NRC, Strava to Nike Run Club, Garmin Connect bridge, free workout sync, FIT converter, historical NRC backfill, running data portability.
+Nike Run Club sync, Nike Running Club sync, NRC import, Apple Watch to NRC, Apple Watch to Nike Running Club, Apple Workout to Nike Run Club, Apple Health to NRC, Apple Health to Nike Run Club without Strava, Nike Run Club sync without Strava, Strava to Nike Run Club, Garmin Connect bridge, free workout sync, FIT converter, HealthKit workout export, historical NRC backfill, running data portability.
